@@ -14,6 +14,8 @@ In a subsequent chapter we will present the other abstractions: Mutex, Monitor a
 
 Pharo supports the concurrent execution of multiple programs using independent processes. These processes are lightweight processes as they share a common memory space. Such processes are instances of the class ==Process==. Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. In Pharo, processes are what is usually called a (green) thread. They have their own execution flow but share the same memory space and use concurrent abstractions such semaphores to synchronize with each other.
 
+
+!!! Simple Example
 Let us start with a simple example. We will explain all the details in subsequent sections. The following code creates two processes using the message ==fork== sent to a block. In each process we enumerate numbers. During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. At the end of the loop we refresh the ==Transcript== output.
 
 [[[
@@ -30,16 +32,18 @@ Transcript endEntry ] fork
 
 Figure *@TwoInterleavingProcesses* shows the output produced by the execution of the snippet.
 
-+Two interleaving processes.>file://figures/TwoInterleavedProcesses.pdf|width=50|label=TwoInterleavingProcesses+
++Two interleaving processes.>file://figures/TwoInterleavedProcesses.pdf|width=60|label=TwoInterleavingProcesses+
 
 We see that the two programs run concurrently, each outputting a number at a time and not producing two numbers in a row.
 
+Let us look at what is a process.
 
+!!! Process Lifetime
+We may put this section in the process section below
 
-!!! Processes
 A process can be in different states depending on its life-time (created, scheduled, executing, waiting, terminated) as shown on Figure *@processStates*. We look at such states now.
 
-+Process states>file://figures/processStates.png|label=processStates+
++Process states.>file://figures/processStates.png|label=processStates+
 
 !!!!Creating and launching a new process
 
@@ -100,6 +104,9 @@ The process creation API is composed of messages sent to blocks.
 
 !!!Processor
 
+Since Pharo runs on a single physical processor, the system implements time sharing where each process has access to the physical processor during a given amount of time. In Pharo this is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule 
+processes. 
+
 To schedule processes, Pharo uses a scheduler. It defines the class ==ProcessorScheduler==. The Pharo scheduler is the unique instance of the class ==ProcessorScheduler== and it is stored in the global variable ==Processor==. The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  To get the running process, you can execute: ==Processor activeProcess==.
 
 
@@ -114,30 +121,53 @@ At any time only one process can be executed. First of all, the processes are be
 
 Next table lists all the predefined priorities together with their numerical value and purpose.
 
-|! Priority |! Name                    |! Purpose
-| 100       | timingPriority           | Used by Processes that are dependent on real time. For example, Delays (see later).
-|  98       | highIOPriority           | Used by time–critical I/O Processes, such as handling input from a network.
-|  90       | lowIOPriority            | Used by most I/O Processes, such as handling input from the user (keyboard, pointing device, etc.).
-|  70       | userInterruptPriority    | Used by user Processes desiring immediate service. Processes run at this level will pre–empt the window scheduler and should, therefore, not consume the Processor forever.
-|  50       | userSchedulingPriority   | Used by Processes governing normal user interaction. Also the priority at which the window scheduler runs.
-|  30       | userBackgroundPriority   | Used by user background Processes.
-|  10       | systemBackgroundPriority | Used by system background Processes. Examples are an optimizing compiler or status checker.
-|   1       | systemRockBottomPriority | The lowest possible priority.
-
+|!Priority|!Name                    |
+| 100       | timingPriority           | 
+| | Used by Processes that are dependent on real time. 
+| |For example, Delays (see later).
+|  98       | highIOPriority           | 
+| | Used by time–critical I/O Processes, such as handling input from a network.
+|  90       | lowIOPriority            | 
+| | Used by most I/O Processes, such as handling input from the user.
+|  70       | userInterruptPriority    | 
+| | Used by user Processes desiring immediate service. 
+| | Processes run at this level will preempt the window scheduler and should,
+| | therefore, not consume the Processor forever.
+|  50       | userSchedulingPriority   | 
+| | Used by Processes governing normal user interaction.
+| | The priority at which the window scheduler runs.
+|  30       | userBackgroundPriority   
+| | Used by user background Processes.
+|  10       | systemBackgroundPriority 
+| | Used by system background Processes. 
+| | Examples are an optimizing compiler or status checker.
+|   1       | systemRockBottomPriority 
+| | The lowest possible priority.
 
 The scheduler knows the currently active process as well as the lists of pending processes based on their priority. It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*. 
 
-+The scheduler knows the currently active process as well as the lists of pending processes based on their priority>file://figures/SchedulerSimple.pdf|label=SchedulerSimple+
++The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=60|label=SchedulerSimple+
 
 There are simple rules to interrupt and change the process to be run:
 
-- Processes with higher priority can interrupt lower priority processes if they have to be executed.
+- Processes with higher priority can interrupt lower priority processes if they have to be executed. 
 
 - Processes with the same priority are executed in the same order they were added to scheduled process list.
 
 - As mentioned before, a process should use ==Processor yield== to give an opportunity to run for the other processes with the same priority. In this case the process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
 
+@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+
+!!! Process
+
+A process is an instance of the class ==Process==. This is class is a subclass of the class ==Link==. A link is an element of a linked list (class ==LinkedList==). This design is to make sure that processes can be elements in a linked list without wrapping it in a ==Link== instance. Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
+
+A process has the following instance variables. 
+- priority: holds an integer to represent the priority level of the process.
+
+- suspendedContext : le contexte actif au moment de la suspension, c’est-à-dire un ensemble d’informations pertinentes au moment de l’exécution du processus, relatives au contexte qui est à l’origine du contexte courant, du receveur de ce contexte, des arguments et informations temporaires sur la pile de travail... ;
+- myList : la liste de processus où se trouve le processus suspendu (il peut y avoir plusieurs listes de ce genre, et ce en liaison également avec la notion de sémaphore...).
 
 
 
