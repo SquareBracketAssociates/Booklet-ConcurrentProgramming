@@ -165,68 +165,173 @@ A process is an instance of the class ==Process==. This is class is a subclass o
 
 A process has the following instance variables. 
 - priority: holds an integer to represent the priority level of the process.
+- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
+- myList: the list of process to which the suspended process belongs to. 
 
-- suspendedContext : le contexte actif au moment de la suspension, c’est-à-dire un ensemble d’informations pertinentes au moment de l’exécution du processus, relatives au contexte qui est à l’origine du contexte courant, du receveur de ce contexte, des arguments et informations temporaires sur la pile de travail... ;
-- myList : la liste de processus où se trouve le processus suspendu (il peut y avoir plusieurs listes de ce genre, et ce en liaison également avec la notion de sémaphore...).
+We will clarify when we will explain semaphores. 
 
 
 
 
 !! Semaphores
-Often we encounter situations where we need to synchronize processes. For example we want to do two actions in parallel and then after they both are complete continue the execution. For this job ""Semaphore"" is your friend. Each time you send it a ==wait== message the execution stops until the semaphare receives ==signal== message.
 
-Consider the following example: We create two processes, each one has a job to do. We do not know when these jobs will be executed. But we want that once both finished, we continue with a third action. 
-So once the jobs are created and scheduled, we send two ==wait== messages to the ""semaphore"". This means that execution will stop there until ""semaphore""  receives the ==signal== message two times. This is only possible if two jobs have finished their execution as they do ==semaphore signal== in the end of a block.
+Often we encounter situations where we need to synchronize processes. For example, imagine that you only have one pen and that you are several people willing to write. You will wait for the pen and once the pen is released, you will be able to access and use it. Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen. 
+
+In fact, our pen is a semaphore. Each time you send a semaphore a ==wait== message, your execution stops until the semaphore receives ==signal== message.
+
+A Semaphore is an object used to synchronize multiple processes. A process ''waits'' for an event to occur by sending the message ==wait== to a semaphore. Another process then ''signals'' that the event has occurred by sending the message ==signal== to the Semaphore. The process waiting for the signal will not proceed until one is sent.
+
+A semaphore is a signalling entity. Processes will wait for its signal on a waiting list. 
+A semaphore will only release as many processes from ==wait== messages as it has received signal messages. When a semaphore receives a ==wait== message for which no corresponding ==signal== has been sent, the process sending the ==wait== is suspended. Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
+
+Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a
+==Process==, it dequeues processes in the order in which they waited on the semaphore.
+
+
+!!! A first example
+
+Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
 [[[
 | semaphore |
 semaphore := Semaphore new.
 
 [ "Do a first job ..."
-	'Job1' crLog.
-	semaphore signal. ] fork.
+	'Job1 started' crLog.
+	semaphore wait. 
+	'Job1 finished' crLog
+	] fork.
 
 [ "Do a second job ..."
-	'Job2' crLog.
-   	semaphore signal. ] fork.
-
-semaphore wait; wait.
-	'Job1 and 2 are finished now we can proceed' crLog
-	"Perform following actions now that the two jobs finished"
+	'Job2 started' crLog.
+	semaphore wait. 
+	'Job2 finished' crLog
+	] fork.
+semaphore
 ]]]
 
-+Controlling that the final action is performed once the two jobs are finished>file://figures/SemaOne.pdf|label=SemaOne+
+You should see in the transcript the following:
+
+[[[
+'Job1 started'
+'Job2 started'
+]]]
+
+What you see is that the two processes stopped. They did not finish their job. 
+When a semaphore receives a ==wait== message, it will stopped the process sending the message and add the process to its pending list. 
+
+Now in the inspector on the semaphore execute ==self signal==.
+This will have as effect to schedule one of the waiting process and one of the job will finish its task.
+
+
+!!! Example: Prearmed Semaphore
+
+Let us modify slightly the previous example. 
+We send a ==signal== message to the semaphore prior to creating the processes.
+
+[[[
+| semaphore |
+semaphore := Semaphore new.
+semaphore signal. 
+[ "Do a first job ..."
+	'Job1 started' crLog.
+	semaphore wait. 
+	'Job1 finished' crLog
+	] fork.
+
+[ "Do a second job ..."
+	'Job2 started' crLog.
+	semaphore wait. 
+	'Job2 finished' crLog
+	] fork.
+semaphore
+]]]
+
+What you see here is that one of the waiting process is proceed.
+
+[[[
+'Job1 started'
+'Job1 finished'
+'Job2 started'
+]]]
+
+This example illustrates that a semaphore a ==signal== does not have to be done after a ==wait==.
+This is important to make sure that one certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another one. 
+
+A semaphore holds a counter of signals that it receives but did not lead to a process execution, and it will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
+
+
+
+!!! Pharo implementation 
+
+A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
+
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process can continue its operations. On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed. 
+
+Here is the implemntation of ==signal== and ==wait== in Pharo.
+
+The signal message comment shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+
+[[[
+Semaphore >> signal
+	"Primitive. Send a signal through the receiver. If one or more processes 
+	have been suspended trying to receive a signal, allow the first one to 
+	proceed. If no process is waiting, remember the excess signal."
+
+	<primitive: 85>
+	self primitiveFailed
+
+	"self isEmpty    
+		ifTrue: [excessSignals := excessSignals+1]    
+		ifFalse: [Processor resume: self removeFirstLink]"
+]]]
+
+The description of the wait primitive shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
+On the contrary, when there is no signals on excess, then the process is suspended.
+
+[[[
+Semaphore >> wait
+	"Primitive. The active Process must receive a signal through the receiver 
+	before proceeding. If no signal has been sent, the active Process will be 
+	suspended until one is sent."
+
+	<primitive: 86>
+	self primitiveFailed
+
+	"excessSignals>0  
+		ifTrue: [excessSignals := excessSignals-1]  
+		ifFalse: [self addLastLink: Processor activeProcess suspend]"
+]]]
 
 
 
 
-When a resource should be shared between different processes, a semaphore should be used to protect the resources.  
-The process will send a message to your resource. Therefore resource methods should be defined in a way that they send the ==wait== to the semaphore.
-If the number of processes connected to the semaphore is less than the number of authorized 
+!!! Ping pong
+
+The following example schedule three processes.
+
+[[[
+| semaphore |
+semaphore := Semaphore new. 
+[ 'Pharo ' crLog ] fork. 
+
+['is ' crLog .
+semaphore wait.
+'super ' crLog. 
+semaphore signal] fork.
+
+['really ' crLog. 
+semaphore signal.
+semaphore wait.
+'cool!' crLog ] fork
+]]]
+
+You should obtain ==Pharo is really super cool!==
 
 
 
+!!! Example of synchronisation
 
-
-Si le nombre de processus connectés à ce 
-moment au sémaphore est inférieur au nombre de processus qui sont autorisés à se connecter, 
-ce message n’est pas bloquant et le processus peut continuer ses opérations en utilisant la 
-ressource comme il le souhaitait. Dans le cas contraire, le processus est stocké en fin de la 
-file d’attente du sémaphore, et ne sera relancé que lorsque les processus qui le précèdent auront 
-libéré la place.
-
-
-
-
-
-
-
-
-!!! We need a simple example
-
-may be a printer and two queues that want to print to it.
-
-printer 
 
 
 
