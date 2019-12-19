@@ -142,7 +142,8 @@ The process creation API is composed of messages sent to blocks.
 Pharo implements time sharing where each process (green thread) has access to the physical processor during a given amount of time. 
 This is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule processes. 
 
-The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  To get the running process, you can execute: ==Processor activeProcess==.
+The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  
+To get the running process, you can execute: ==Processor activeProcess==.
 
 
 !!!!Process priority
