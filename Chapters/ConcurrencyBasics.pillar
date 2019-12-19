@@ -1,8 +1,14 @@
+This book describes the low-level abstractions available in Pharo for concurrent programming. 
+It explains pedagogically different aspects. 
+Now, if you happen to create many green threads (called Process in Pharo) we suggest that you 
+have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
+You should definitively have a look at it. 
+
 !! Concurrent Programming in Pharo
 
-Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes (or threads) that are scheduled by a process scheduler defined within the language.
+Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
 
-Pharo's concurrency is ''collaborative'' and ''preemptive''. It is preemptive because a process with higher priority can interrupt the current running one. It is collaborative because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
+Pharo's concurrency is ''collaborative'' and ''preemptive''. It is ''preemptive'' because a process with higher priority can interrupt the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
 
 In this chapter we present how processes are created and their lifetime. We present
 semaphores since they are the most basic building blocks to support concurrent programming and the infrastructure to execute concurrent programs. We will show how the process scheduler manages the system. 
@@ -10,13 +16,23 @@ semaphores since they are the most basic building blocks to support concurrent p
 In a subsequent chapter we will present the other abstractions: Mutex, Monitor and Delay.
 
 
-!! Processes by Example
+!!! Studying an example
 
-Pharo supports the concurrent execution of multiple programs using independent processes. These processes are lightweight processes as they share a common memory space. Such processes are instances of the class ==Process==. Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. In Pharo, processes are what is usually called a (green) thread. They have their own execution flow but share the same memory space and use concurrent abstractions such semaphores to synchronize with each other.
+Pharo supports the concurrent execution of multiple programs using independent processes (green threads). 
+These processes are lightweight processes as they share a common memory space. 
+Such processes are instances of the class ==Process==. 
+Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. 
+In Pharo, processes are what is usually called a (green) thread in other languages. 
+They have their own execution flow but share the same memory space and use concurrent abstractions such semaphores to synchronize with each other.
 
 
-!!! Simple Example
-Let us start with a simple example. We will explain all the details in subsequent sections. The following code creates two processes using the message ==fork== sent to a block. In each process we enumerate numbers. During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. At the end of the loop we refresh the ==Transcript== output.
+!!! A simple example
+Let us start with a simple example. 
+We will explain all the details in subsequent sections. 
+The following code creates two processes using the message ==fork== sent to a block. 
+In each process we enumerate numbers. 
+During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
+At the end of the loop we refresh the ==Transcript== output.
 
 [[[
 [ 1 to: 10 do: [ :i |
@@ -39,36 +55,50 @@ We see that the two programs run concurrently, each outputting a number at a tim
 Let us look at what is a process.
 
 !!! Process Lifetime
-We may put this section in the process section below
 
-A process can be in different states depending on its life-time (created, scheduled, executing, waiting, terminated) as shown on Figure *@processStates*. We look at such states now.
+A process can be in different states depending on its life-time (""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"") as shown in Figure *@processStates*. We look at such states now.
 
-+Process states.>file://figures/processStates.png|label=processStates+
++Process states:  A process (green thread) can be in one of the following states: ""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"".>file://figures/processStates.pdf|label=processStates+
 
 !!!!Creating and launching a new process
 
 To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
 
 [[[
-[ 1 to: 10 do: [ :i | i  printString crLog ] 
+[ 1 to: 10 do: [ :i | i  printString traceCr ] 
 	] fork
 ]]]
 
-This expression creates an instance of the class ==Process==. It is added to the list of scheduled processes of the process scheduler (as we will explained later). We say that this process is ==runnable==: it can be potentially executed. It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control. At this moment the block of this process will be executed.
+This expression creates an instance of the class ==Process==. 
+It is added to the list of scheduled processes of the process scheduler (as we will explained later). 
+We say that this process is ==runnable==: 
+it can be potentially executed. 
+It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control.
+At this moment the block of this process will be executed.
 
-!!!! Creating without scheduling a process
-We can also create a process which is not scheduled (hence suspended) using the message ==newProcess==.
+!!!! Creating a process without scheduling it
+We can also create a process which is not scheduled (hence ""suspended"") using the message ==newProcess==.
 
+You can i
 [[[
 | pr |
 pr := [ 1 to: 10 do: [ :i |
-   i  printString crLog ] ] newProcess.
-pr resume
+   i  printString traceCr ] ] newProcess.
+pr inspect
 ]]]
 
-This creates a process in ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler. It is not that is not ==runnable==. It can be scheduled sending it the message ==resume==.
+
+This creates a process in ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler. 
+It is not that is not ==runnable==. It can be scheduled sending it the message ==resume==.
+
+In the inspector open by the previous expression, you can execute ==self resume== and then the process will be scheduled. 
+[[[
+self resume
+]]]
+
 
 Also ""suspended"" process can be executed immediately by sending it the ==run== message.
+The message ==run== suspends the current process and execute the receiver process at the highest priority.
 
 !!!! Passing arguments to a process
 You can also pass arguments to a process with the message ==newProcessWith: anArray== as follows:
@@ -84,10 +114,15 @@ pr resume
 Note that the elements of the argument array are passed to the corresponding block parameters.
 
 !!!! Suspending and terminating a process
-A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. A suspended processed can be rescheduled using the message ==resume==. Now we can also terminate a process using the message ==terminate==. A terminated process cannot be scheduled any more.
+A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
+A suspended processed can be rescheduled using the message ==resume==. 
+We can also terminate a process using the message ==terminate==. 
+A terminated process cannot be scheduled any more.
 
 !!!! Creating a waiting process
-As you see on Figure *@processStates* a process can be in a waiting state. When you have concurrent processes you need to have way to synchronize them.
+As you see on Figure *@processStates* a process can be in a waiting state.
+It means that the process is blocked waiting to be rescheduled. 
+This happens when you need to synchronize concurrent processes.
 The basic synchronization mechanism is a semaphore and we will cover this deeply in subsequent sections.
 
 
@@ -104,10 +139,10 @@ The process creation API is composed of messages sent to blocks.
 
 !!!Processor
 
-Since Pharo runs on a single physical processor, the system implements time sharing where each process has access to the physical processor during a given amount of time. In Pharo this is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule 
-processes. 
+Pharo implements time sharing where each process (green thread) has access to the physical processor during a given amount of time. 
+This is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule processes. 
 
-To schedule processes, Pharo uses a scheduler. It defines the class ==ProcessorScheduler==. The Pharo scheduler is the unique instance of the class ==ProcessorScheduler== and it is stored in the global variable ==Processor==. The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  To get the running process, you can execute: ==Processor activeProcess==.
+The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  To get the running process, you can execute: ==Processor activeProcess==.
 
 
 !!!!Process priority
@@ -656,7 +691,7 @@ SharedQueue >> nextPut: value
 
 
 
-!! Conclusion
+!!! Conclusion
 We presented the key elements of basic concurrent programming in Pharo and some implementation details.
 
 % Local Variables:
