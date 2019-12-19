@@ -137,7 +137,7 @@ The process creation API is composed of messages sent to blocks.
 
 
 
-!!!Processor
+!!!First look at ProcessorScheduler
 
 Pharo implements time sharing where each process (green thread) has access to the physical processor during a given amount of time. 
 This is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule processes. 
@@ -159,28 +159,30 @@ Next table lists all the predefined priorities together with their numerical val
 
 |!Priority|!Name                    |
 | 100       | timingPriority           | 
-| | Used by Processes that are dependent on real time. 
+| | For processes that are dependent on real time. 
 | |For example, Delays (see later).
 |  98       | highIOPriority           | 
-| | Used by time–critical I/O Processes, such as handling input from a network.
+| | For time–critical I/O processes, such as handling input from a network.
 |  90       | lowIOPriority            | 
-| | Used by most I/O Processes, such as handling input from the user.
+| | For most I/O processes, such as handling input from the user.
 |  70       | userInterruptPriority    | 
-| | Used by user Processes desiring immediate service. 
+| | For user processes desiring immediate service. 
 | | Processes run at this level will preempt the window scheduler and should,
 | | therefore, not consume the Processor forever.
 |  50       | userSchedulingPriority   | 
-| | Used by Processes governing normal user interaction.
+| | For processes governing normal user interaction.
 | | The priority at which the window scheduler runs.
 |  30       | userBackgroundPriority   
-| | Used by user background Processes.
+| | For user background processes.
 |  10       | systemBackgroundPriority 
-| | Used by system background Processes. 
+| | For system background processes. 
 | | Examples are an optimizing compiler or status checker.
 |   1       | systemRockBottomPriority 
 | | The lowest possible priority.
 
-The scheduler knows the currently active process as well as the lists of pending processes based on their priority. It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*. 
+The scheduler knows the currently active process as well as the lists of pending processes based on their priority.
+It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*.
+It uses the priority lists to manage processes that are suspended (and waiting to be scheduled) in the first in first out way.
 
 +The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=60|label=SchedulerSimple+
 
@@ -190,30 +192,47 @@ There are simple rules to interrupt and change the process to be run:
 
 - Processes with the same priority are executed in the same order they were added to scheduled process list.
 
-- As mentioned before, a process should use ==Processor yield== to give an opportunity to run for the other processes with the same priority. In this case the process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
+- As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
 
 @@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
 
 !!! Process
 
-A process is an instance of the class ==Process==. This is class is a subclass of the class ==Link==. A link is an element of a linked list (class ==LinkedList==). This design is to make sure that processes can be elements in a linked list without wrapping it in a ==Link== instance. Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
+A process is an instance of the class ==Process==. 
+This is class is a subclass of the class ==Link==. 
+A link is an element of a linked list (class ==LinkedList==). 
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance. 
+Note that this linked list is tailored for the Process scheduler logic. 
+Better use another one if you need one.
 
-A process has the following instance variables. 
+A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
-- myList: the list of process to which the suspended process belongs to. 
+- myList: the list of processes to which the suspended process belongs to. 
 
-We will clarify when we will explain semaphores. 
 
+
+!!! Conclusion
+We presented briefly the concurrency model of Pharo: preemptive and collaborative. A process of higher priority can stop the execution of processes of lower ones. 
+Processes at the same priority should explicit return control using the ==yield== message.
+We presented the notion of process (green thread) and process scheduler. 
+In the next chapter we explain semaphores since we will explain how the scheduler uses delays to performing its scheduling. 
 
 
 
 !! Semaphores
 
-Often we encounter situations where we need to synchronize processes. For example, imagine that you only have one pen and that you are several people willing to write. You will wait for the pen and once the pen is released, you will be able to access and use it. Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen. 
+Often we encounter situations where we need to synchronize processes.
+For example, imagine that you only have one pen and that you are several people willing to write.
+You will wait for the pen and once the pen is released, you will be able to access and use it. 
+Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen. 
+When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it. 
+Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
 
 In fact, our pen is a semaphore. Each time you send a semaphore a ==wait== message, your execution stops until the semaphore receives ==signal== message.
+
+!!! Understanding semaphores
 
 A Semaphore is an object used to synchronize multiple processes. A process ''waits'' for an event to occur by sending the message ==wait== to a semaphore. Another process then ''signals'' that the event has occurred by sending the message ==signal== to the Semaphore. The process waiting for the signal will not proceed until one is sent.
 
@@ -224,7 +243,13 @@ Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the pri
 ==Process==, it dequeues processes in the order in which they waited on the semaphore.
 
 
-!!! A first example
++Semaphore principle: a semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. When the process accessing the resources releases it, it signals it to the semaphore. The semaphore resume the first waiting process which is added to the suspended list of the scheduler. >file://figures/09-02.pdf|width=60|label=SchedulerSimple+
+
+
+
+
+
+!!! An example
 
 Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
