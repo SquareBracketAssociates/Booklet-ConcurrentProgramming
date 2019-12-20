@@ -107,7 +107,7 @@ You can also pass arguments to a process with the message ==newProcessWith: anAr
 | pr |
 pr := [ :max |
   1 to: max do: [ :i |
-    i  printString crLog ] ] newProcessWith: #(20).
+    i  printString crTrace ] ] newProcessWith: #(20).
 pr resume
 ]]]
 
@@ -151,7 +151,7 @@ To get the running process, you can execute: ==Processor activeProcess==.
 At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. For example, the following snippet is run at the same priority that background user tasks.
 
 [[[
-[ 1 to: 10 do: [ :i | i  printString crLog ]
+[ 1 to: 10 do: [ :i | i  printString crTrace ]
 	] forkAt: Processor userBackgroundPriority
 ]]]
 
@@ -286,15 +286,15 @@ Open a transcript and inspect the following piece of code: It schedules two proc
 semaphore := Semaphore new.
 
 [ "Do a first job ..."
-	'Job1 started' crLog.
+	'Job1 started' crTrace.
 	semaphore wait. 
-	'Job1 finished' crLog
+	'Job1 finished' crTrace
 	] fork.
 
 [ "Do a second job ..."
-	'Job2 started' crLog.
+	'Job2 started' crTrace.
 	semaphore wait. 
-	'Job2 finished' crLog
+	'Job2 finished' crTrace
 	] fork.
 semaphore inspect
 ]]]
@@ -323,15 +323,15 @@ We send a ==signal== message to the semaphore prior to creating the processes.
 semaphore := Semaphore new.
 semaphore signal. 
 [ "Do a first job ..."
-	'Job1 started' crLog.
+	'Job1 started' crTrace.
 	semaphore wait. 
-	'Job1 finished' crLog
+	'Job1 finished' crTrace
 	] fork.
 
 [ "Do a second job ..."
-	'Job2 started' crLog.
+	'Job2 started' crTrace.
 	semaphore wait. 
-	'Job2 finished' crLog
+	'Job2 finished' crTrace
 	] fork.
 semaphore
 ]]]
@@ -400,17 +400,17 @@ The following example schedule three processes. It shows that thread can wait, d
 [[[
 | semaphore |
 semaphore := Semaphore new. 
-[ 'Pharo ' crLog ] fork. 
+[ 'Pharo ' crTrace ] fork. 
 
-['is ' crLog .
+['is ' crTrace .
 semaphore wait.
-'super ' crLog. 
+'super ' crTrace. 
 semaphore signal] fork.
 
-['really ' crLog. 
+['really ' crTrace. 
 semaphore signal.
 semaphore wait.
-'cool!' crLog ] fork
+'cool!' crTrace ] fork
 ]]]
 
 You should obtain ==Pharo is really super cool!==
@@ -486,7 +486,7 @@ Typical needs for delas are
 | betweenPing |  
 betweenPing := Delay forMilliseconds: 300.
 10 timesRepeat: [ 
-   'ping' crLog. 
+   'ping' crTrace. 
    betweenPing wait] 
    ] forkAt: Processor userBackgroundPriority.
 	  
@@ -494,7 +494,7 @@ betweenPing := Delay forMilliseconds: 300.
 | betweenPong |  
 betweenPong := Delay forMilliseconds: 100.
 10 timesRepeat: [ 
-   'PONG' crLog. 
+   'PONG' crTrace. 
    betweenPong wait]
    ] forkAt: Processor userBackgroundPriority.
 ]]]
@@ -548,13 +548,13 @@ account := 3000.
 [ 10 timesRepeat: [
 	lock wait.
 	counter := counter + 100.
-	compter crLog.
+	compter crTrace.
 	lock signal ]
 	] fork.
 	
 [ 10 timesRepeat: [
 	counter := counter - 100.
-	counter crLog. 
+	counter crTrace. 
 	lock signal. 
 	lock wait ]
 	] fork
@@ -582,12 +582,12 @@ lock := Mutex new.
 account := 3000.
 [10 timesRepeat: [ Processor yield.
 	lock critical: [ account := counter + 100.
-					account crLog ] ]
+					account crTrace ] ]
 	] fork.
 
 [10 timesRepeat: [ Processor yield.
 	lock critical: [ account := counter - 100.
-					account crLog ] ]
+					account crTrace ] ]
 	] fork
 ]]]
 
@@ -605,14 +605,14 @@ file := SharedQueue new.
 	[ |number| "reader 1"
 	number := file next.
 	number ifNil: [Processor terminateActive].
-	number crLog ] repeat
+	number crTrace ] repeat
 	] fork. 
 ]]]
 
 [[[
 	[ |counter| "reader 2" 
 	counter := 0. 
-	[file next ifNil: [ ('total = ', counter asString) crLog.
+	[file next ifNil: [ ('total = ', counter asString) crTrace.
 		Processor terminateAc3ve].
 		counter := counter + 1 ] repeat 
 	] fork.
