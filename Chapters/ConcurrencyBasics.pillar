@@ -230,30 +230,29 @@ Now since multiple people can wait for the pen, the waiters are ordered in a wai
 When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
 Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
 
-In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself.
+In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
+A great book proposes different synchronization challenges that are solves with Semapharo: The Little Book of Semaphores.
+It is clearly a nice further readings. 
 
 !!! Understanding semaphores
 
 A Semaphore is an object used to synchronize multiple processes.
-A process ''waits'' for an event to occur by sending the message ==wait== to a semaphore.
-Another process then ''signals'' that the event has occurred by sending the message ==signal== to the Semaphore.
-The process waiting for the signal will not proceed until one is sent.
+A semaphore is often used to make sure that a resource is only be accessed by a single process at the time.
 
-A semaphore is a signalling entity. 
-Processes will wait for its signal on a waiting list. 
-
-A semaphore will only release as many processes from ==wait== messages as it has received signal messages.
-When a semaphore receives a ==wait== message for which no corresponding ==signal== has been sent, the process sending the ==wait== is suspended.
-Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
-
-Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a
-==Process==, it dequeues processes in the order in which they waited on the semaphore.
-
-The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
-
-A semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. 
-When the process accessing the resources releases it, it signals it to the semaphore. 
+A process that wants to access to a resources will declare to the semaphore protecting the resources by sending
+to the semaphore the message ==wait==. 
+The semaphore will add this process to its waiting list. 
+A semaphore keeps a list of waiting processes that want to access to the resource protected by the semaphore.
+When the process currently using the resources does not use it anymore, it signals it to the semaphore sending the message ==signal==. 
 The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
+
+Here are the steps illustrating a typical scenario illustrated by the following diagram.
+# The semaphore protects a resources: P0 is using the resources. Processes P1, P2, P3 are waiting for the resources (Fig. *@Sema1*). They are queued in the semaphore waiting list.
+# The process P4 wants to access the resources: it sends wait to the semaphore (Fig. *@Sema2*).
+# P4 is added to the waiting list (Fig. *@Sema3*).
+# P0 has finished to use the resources: it signals it to the semaphore (Fig. *@Sema4*).
+# The semaphore resumes the first waiting process, here P1 (Fig. *@Sema5*).
+# The resumed process, P1, will be scheduled by the scheduler.
 
 
 +The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=60|label=Sema1+
@@ -262,14 +261,24 @@ The semaphore resumes the first waiting process which is added to the suspended 
 
 +P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=60|label=Sema3+
 
-+P0 has finished to use the resources: it signals it to the semaphore.>file://figures/Semaphores4.pdf|width=60|label=Sema4+
++P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process. >file://figures/Semaphores4.pdf|width=60|label=Sema4+
 
-+The semaphore resume the first waiting process (P1).>file://figures/Semaphores5.pdf|width=60|label=Sema5+
++The resumed process, P1,  is added to the scheduled list of process of the ProcessScheduler.>file://figures/Semaphores5.pdf|width=60|label=Sema5+
 
-+The resumed process is now scheduled by the scheduler.>file://figures/Semaphores6.pdf|width=60|label=Sema6+
+%The resumed process is now scheduled by the scheduler. When P1 gets executed>file://figures/Semaphores6.pdf|width=60|label=Sema6+
+
+
+!!!! Details 
+A semaphore will only release as many processes from ==wait== messages as it has received signal messages.
+When a semaphore receives a ==wait== message for which no corresponding ==signal== has been sent, the process sending the ==wait== is suspended.
+Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
+
+Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a process, it dequeues processes in the order in which they waited on the semaphore.
+The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
+
 
 !!! An example
-
+Before continuing let us play with semaphores.
 Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
 [[[
@@ -301,10 +310,10 @@ What you see is that the two processes stopped. They did not finish their job.
 When a semaphore receives a ==wait== message, it will stop the process sending the message and add the process to its pending list. 
 
 Now in the inspector on the semaphore execute ==self signal==.
-This will have as effect to schedule one of the waiting process and one of the job will finish its task.
+This schedules one of the waiting process and one of the job will finish its task.
+If we do not send a new signal message to the semaphore, the second waiting process will never be scheduled.
 
-
-!!! Example: Prearmed Semaphore
+!!! Example: Prearmed semaphore
 
 Let us modify slightly the previous example. 
 We send a ==signal== message to the semaphore prior to creating the processes.

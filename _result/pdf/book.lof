@@ -6,9 +6,9 @@
 \contentsline {figure}{\numberline {2-2}{\ignorespaces The process P4 wants to access the resources: it sends wait to the semaphore.}}{12}{figure.2.2}
 \contentsline {figure}{\numberline {2-3}{\ignorespaces P4 is added to the waiting list.}}{12}{figure.2.3}
 \contentsline {figure}{\numberline {2-4}{\ignorespaces P0 has finished to use the resources: it signals it to the semaphore.}}{13}{figure.2.4}
-\contentsline {figure}{\numberline {2-5}{\ignorespaces The semaphore resume the first waiting process (P1).}}{13}{figure.2.5}
+\contentsline {figure}{\numberline {2-5}{\ignorespaces The semaphore resumes the first waiting process (P1).}}{13}{figure.2.5}
 \contentsline {figure}{\numberline {2-6}{\ignorespaces The resumed process is now scheduled by the scheduler.}}{13}{figure.2.6}
 \addvspace {10pt}\begingroup \dimen@ 3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup 
-\contentsline {figure}{\numberline {3-1}{\ignorespaces BBB}}{18}{figure.3.1}
-\contentsline {figure}{\numberline {3-2}{\ignorespaces Revisiting the process states}}{18}{figure.3.2}
+\contentsline {figure}{\numberline {3-1}{\ignorespaces BBB}}{20}{figure.3.1}
+\contentsline {figure}{\numberline {3-2}{\ignorespaces Revisiting the process states}}{20}{figure.3.2}
 \addvspace {10pt}\begingroup \dimen@ 3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup 

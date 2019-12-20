@@ -329,25 +329,25 @@ Writers needed to use the pen just register to the pen: they are added at the en
 In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself.
 \section{Understanding semaphores}
 A Semaphore is an object used to synchronize multiple processes.
-A process \textit{waits} for an event to occur by sending the message \textcode{wait} to a semaphore.
-Another process then \textit{signals} that the event has occurred by sending the message \textcode{signal} to the Semaphore.
-The process waiting for the signal will not proceed until one is sent.
+A semaphore is often used to make sure that a resource is only be accessed by a single process at the time.
 
-A semaphore is a signalling entity. 
-Processes will wait for its signal on a waiting list. 
-
-A semaphore will only release as many processes from \textcode{wait} messages as it has received signal messages.
-When a semaphore receives a \textcode{wait} message for which no corresponding \textcode{signal} has been sent, the process sending the \textcode{wait} is suspended.
-Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
-
-Unlike the \textcode{ProcessorScheduler}, a semaphore does not pay attention to the priority of a
-\textcode{Process}, it dequeues processes in the order in which they waited on the semaphore.
-
-The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
-
-A semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. 
-When the process accessing the resources releases it, it signals it to the semaphore. 
+A process that wants to access to a resource will declare to the semaphore protecting the resource by sending
+to the semaphore the message \textcode{wait}. 
+The semaphore will add this process to its waiting list. 
+A semaphore keeps a list of waiting processes that want to access to the resource protected by the semaphore.
+When the process currently using the resource does not use it anymore, it signals it to the semaphore sending the message \textcode{signal}. 
 The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
+
+Here are the steps:
+
+\begin{enumerate}
+\item The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources (Fig. \ref{Sema1}).
+\item The process P4 wants to access the resources: it sends wait to the semaphore (Fig. \ref{Sema2}).
+\item P4 is added to the waiting list (Fig. \ref{Sema3}).
+\item P0 has finished to use the resources: it signals it to the semaphore  (Fig. \ref{Sema4})..
+\item The semaphore resumes the first waiting process (P1) (Fig. \ref{Sema5}).
+\item The resumed process is now scheduled by the scheduler  (Fig. \ref{Sema6}).
+\end{enumerate}
 
 
 \begin{figure}
@@ -385,7 +385,7 @@ The semaphore resumes the first waiting process which is added to the suspended 
 \begin{figure}
 
 \begin{center}
-\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf}\caption{The semaphore resume the first waiting process (P1).\label{Sema5}}\end{center}
+\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf}\caption{The semaphore resumes the first waiting process (P1).\label{Sema5}}\end{center}
 \end{figure}
 
 
@@ -396,6 +396,15 @@ The semaphore resumes the first waiting process which is added to the suspended 
 \includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores6.pdf}\caption{The resumed process is now scheduled by the scheduler.\label{Sema6}}\end{center}
 \end{figure}
 
+
+A semaphore will only release as many processes from \textcode{wait} messages as it has received signal messages.
+When a semaphore receives a \textcode{wait} message for which no corresponding \textcode{signal} has been sent, the process sending the \textcode{wait} is suspended.
+Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
+
+Unlike the \textcode{ProcessorScheduler}, a semaphore does not pay attention to the priority of a
+\textcode{Process}, it dequeues processes in the order in which they waited on the semaphore.
+
+The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
 \section{An example}
 Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
