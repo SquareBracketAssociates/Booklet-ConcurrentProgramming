@@ -1,0 +1,48 @@
+\changetocdepth {1}
+\contentsline {chapter}{Illustrations}{iii}{section*.1}
+\needspace {6\baselineskip }
+\contentsline {part}{\partnumberline {I}TaskIt}{1}{part.1}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {1}Introduction}{5}{chapter.1}
+\contentsline {section}{\numberline {1.1}Downloading}{5}{section.1.1}
+\contentsline {subsection}{Adding it as a Metacello dependency}{5}{section*.3}
+\contentsline {subsection}{For developers}{6}{section*.4}
+\contentsline {section}{\numberline {1.2}Changeslog}{6}{section.1.2}
+\contentsline {subsection}{v0.2}{6}{section*.5}
+\contentsline {subsubsection}{Major Features}{6}{section*.6}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {2}Asynchronous Tasks}{7}{chapter.2}
+\contentsline {section}{\numberline {2.1}First Example}{7}{section.2.1}
+\contentsline {section}{\numberline {2.2}Schedule vs fork}{8}{section.2.2}
+\contentsline {section}{\numberline {2.3}All valuables can be Tasks}{8}{section.2.3}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {3}Retrieving a Task's Result with Futures}{11}{chapter.3}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {4}Task Runners: Controlling How Tasks are executed }{13}{chapter.4}
+\contentsline {section}{\numberline {4.1}New Process Task Runner}{13}{section.4.1}
+\contentsline {section}{\numberline {4.2}Local Process Task Runner}{14}{section.4.2}
+\contentsline {section}{\numberline {4.3}The Worker Runner}{15}{section.4.3}
+\contentsline {section}{\numberline {4.4}The Worker pool}{15}{section.4.4}
+\contentsline {subsection}{TKTWorkerPool}{15}{section*.7}
+\contentsline {subsection}{TKTCommonQueueWorkerPool}{16}{section*.8}
+\contentsline {section}{\numberline {4.5}Managing Runner Exceptions}{17}{section.4.5}
+\contentsline {section}{\numberline {4.6}Task Timeout}{17}{section.4.6}
+\contentsline {section}{\numberline {4.7}Where do tasks and callbacks run by default?}{18}{section.4.7}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {5}Advanced Futures}{19}{chapter.5}
+\contentsline {section}{\numberline {5.1}Future combinators}{19}{section.5.1}
+\contentsline {section}{\numberline {5.2}Synchronous Access}{21}{section.5.2}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {6}Services}{23}{chapter.6}
+\contentsline {section}{\numberline {6.1}Creating Services with Blocks}{24}{section.6.1}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {7}Process dashboard }{25}{chapter.7}
+\contentsline {section}{\numberline {7.1}TaskIt tab }{25}{section.7.1}
+\contentsline {section}{\numberline {7.2}System tab}{26}{section.7.2}
+\contentsline {section}{\numberline {7.3}Based on announcements }{26}{section.7.3}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {8}Debugger}{27}{chapter.8}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {9}Configuration}{29}{chapter.9}
+\needspace {3\baselineskip }
+\contentsline {chapter}{\chapternumberline {10}Future versions}{31}{chapter.10}

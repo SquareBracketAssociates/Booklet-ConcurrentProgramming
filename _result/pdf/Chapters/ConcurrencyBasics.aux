@@ -1,0 +1,90 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*{\memsetcounter}[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\changetocdepth  {1}}
+\providecommand\tcolorbox@label[2]{}
+\@writefile{toc}{\contentsline {chapter}{Illustrations}{ii}{section*.1}}
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {1}Concurrent Programming in Pharo}{3}{chapter.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.1}Studying an example}{3}{section.1.1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1-1}{\ignorespaces Two interleaving processes.}}{4}{figure.1.1}}
+\newlabel{TwoInterleavingProcesses}{{\M@TitleReference {1-1}{A simple example}}{4}{Two interleaving processes}{figure.1.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}A simple example}{4}{section.1.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.3}Process Lifetime}{4}{section.1.3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1-2}{\ignorespaces Process states: A process (green thread) can be in one of the following states: \textbf  {runnable}, \textbf  {suspended}, \textbf  {executing}, \textbf  {waiting}, \textbf  {terminated}.}}{5}{figure.1.2}}
+\newlabel{processStates}{{\M@TitleReference {1-2}{Process Lifetime}}{5}{Process states: A process (green thread) can be in one of the following states: \textbf {runnable}, \textbf {suspended}, \textbf {executing}, \textbf {waiting}, \textbf {terminated}}{figure.1.2}{}}
+\@writefile{toc}{\contentsline {subsection}{Creating and launching a new process}{5}{section*.2}}
+\@writefile{toc}{\contentsline {subsection}{Creating a process without scheduling it}{5}{section*.3}}
+\@writefile{toc}{\contentsline {subsection}{Passing arguments to a process}{6}{section*.4}}
+\@writefile{toc}{\contentsline {subsection}{Suspending and terminating a process}{6}{section*.5}}
+\@writefile{toc}{\contentsline {subsection}{Creating a waiting process}{6}{section*.6}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.4}Creation API Summary}{6}{section.1.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.5}First look at ProcessorScheduler}{7}{section.1.5}}
+\@writefile{toc}{\contentsline {subsection}{Process priority}{7}{section*.7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1-3}{\ignorespaces The scheduler knows the currently active process as well as the lists of pending processes based on their priority.}}{8}{figure.1.3}}
+\newlabel{SchedulerSimple}{{\M@TitleReference {1-3}{Process priority}}{8}{The scheduler knows the currently active process as well as the lists of pending processes based on their priority}{figure.1.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.6}Process}{9}{section.1.6}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.7}Conclusion}{9}{section.1.7}}
+\@writefile{lof}{\addvspace {10pt}\begingroup \dimen@  3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup }
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {2}Semaphores}{11}{chapter.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}Understanding semaphores}{11}{section.2.1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-1}{\ignorespaces The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. }}{12}{figure.2.1}}
+\newlabel{Sema1}{{\M@TitleReference {2-1}{Understanding semaphores}}{12}{The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources}{figure.2.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-2}{\ignorespaces The process P4 wants to access the resources: it sends wait to the semaphore.}}{12}{figure.2.2}}
+\newlabel{Sema2}{{\M@TitleReference {2-2}{Understanding semaphores}}{12}{The process P4 wants to access the resources: it sends wait to the semaphore}{figure.2.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-3}{\ignorespaces P4 is added to the waiting list.}}{12}{figure.2.3}}
+\newlabel{Sema3}{{\M@TitleReference {2-3}{Understanding semaphores}}{12}{P4 is added to the waiting list}{figure.2.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-4}{\ignorespaces P0 has finished to use the resources: it signals it to the semaphore.}}{13}{figure.2.4}}
+\newlabel{Sema4}{{\M@TitleReference {2-4}{Understanding semaphores}}{13}{P0 has finished to use the resources: it signals it to the semaphore}{figure.2.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-5}{\ignorespaces The semaphore resume the first waiting process (P1).}}{13}{figure.2.5}}
+\newlabel{Sema5}{{\M@TitleReference {2-5}{Understanding semaphores}}{13}{The semaphore resume the first waiting process (P1)}{figure.2.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-6}{\ignorespaces The resumed process is now scheduled by the scheduler.}}{13}{figure.2.6}}
+\newlabel{Sema6}{{\M@TitleReference {2-6}{Understanding semaphores}}{13}{The resumed process is now scheduled by the scheduler}{figure.2.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}An example}{13}{section.2.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Example: Prearmed Semaphore}{14}{section.2.3}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Pharo implementation }{15}{section.2.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}wait and signal interplay}{16}{section.2.5}}
+\@writefile{lof}{\addvspace {10pt}\begingroup \dimen@  3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup }
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {3}Scheduler's principles}{17}{chapter.3}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Delay}{17}{section.3.1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3-1}{\ignorespaces BBB}}{18}{figure.3.1}}
+\newlabel{ProcessorStateSchedulerSemaphore}{{\M@TitleReference {3-1}{Scheduler's principles}}{18}{BBB}{figure.3.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3-2}{\ignorespaces Revisiting the process states}}{18}{figure.3.2}}
+\newlabel{ProcessorStateScheduler}{{\M@TitleReference {3-2}{Scheduler's principles}}{18}{Revisiting the process states}{figure.3.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Example}{19}{section.3.2}}
+\@writefile{lof}{\addvspace {10pt}\begingroup \dimen@  3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup }
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {4}Synchronisation}{21}{chapter.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Motivation}{21}{section.4.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Using a semaphore}{22}{section.4.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Using a Mutex}{22}{section.4.3}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Shared Queue}{23}{section.4.4}}
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {5}Monitor}{25}{chapter.5}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Basic usage:}{25}{section.5.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}We need one example here}{26}{section.5.2}}
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {6}Mutex implementation}{27}{chapter.6}}
+\@writefile{toc}{\needspace {3\baselineskip }}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {7}ShareQueue: a Semaphore Example}{29}{chapter.7}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}Conclusion}{30}{section.7.1}}
+\memsetcounter{lastsheet}{34}
+\memsetcounter{lastpage}{30}

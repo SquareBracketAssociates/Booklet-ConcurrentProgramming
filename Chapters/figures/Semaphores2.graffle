@@ -207,7 +207,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2019-12-19 21:41:37 +0000</string>
+	<string>2019-12-20 12:14:37 +0000</string>
 	<key>Modifier</key>
 	<string>ducasse</string>
 	<key>MovementHandleVisible</key>
@@ -895,7 +895,7 @@
 					<array>
 						<dict>
 							<key>Bounds</key>
-							<string>{{147.40255097062033, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
+							<string>{{156.40255097062033, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -938,7 +938,7 @@
 						</dict>
 						<dict>
 							<key>Bounds</key>
-							<string>{{125.35999777913094, 195.71999636292458}, {37, 38}}</string>
+							<string>{{134.35999777913094, 195.71999636292458}, {37, 38}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -1003,7 +1003,7 @@
 					<array>
 						<dict>
 							<key>Bounds</key>
-							<string>{{191.60255125672262, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
+							<string>{{200.60255125672262, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -1046,7 +1046,7 @@
 						</dict>
 						<dict>
 							<key>Bounds</key>
-							<string>{{169.55999806523323, 195.71999636292458}, {37, 38}}</string>
+							<string>{{178.55999806523323, 195.71999636292458}, {37, 38}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -1111,7 +1111,7 @@
 					<array>
 						<dict>
 							<key>Bounds</key>
-							<string>{{235.80255154282486, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
+							<string>{{244.80255154282486, 215.77555191848012}, {5.5106382978723403, 14.777777777777779}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -1154,7 +1154,7 @@
 						</dict>
 						<dict>
 							<key>Bounds</key>
-							<string>{{213.75999835133553, 195.71999636292458}, {37, 38}}</string>
+							<string>{{222.75999835133553, 195.71999636292458}, {37, 38}}</string>
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
@@ -1448,7 +1448,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{1251, 291}, {1168, 777}}</string>
+		<string>{{112, 0}, {1168, 777}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>

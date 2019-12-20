@@ -1,0 +1,744 @@
+This book describes the low-level abstractions available in Pharo for concurrent programming. 
+It explains pedagogically different aspects. 
+Now, if you happen to create many green threads (called Process in Pharo) we suggest that you 
+have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
+You should definitively have a look at it. 
+
+!! Concurrent Programming in Pharo
+
+Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
+
+Pharo's concurrency is ''collaborative'' and ''preemptive''. It is ''preemptive'' because a process with higher priority can interrupt the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
+
+In this chapter we present how processes are created and their lifetime. We present
+semaphores since they are the most basic building blocks to support concurrent programming and the infrastructure to execute concurrent programs. We will show how the process scheduler manages the system. 
+
+In a subsequent chapter we will present the other abstractions: Mutex, Monitor and Delay.
+
+
+!!! Studying an example
+
+Pharo supports the concurrent execution of multiple programs using independent processes (green threads). 
+These processes are lightweight processes as they share a common memory space. 
+Such processes are instances of the class ==Process==. 
+Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. 
+In Pharo, processes are what is usually called a (green) thread in other languages. 
+They have their own execution flow but share the same memory space and use concurrent abstractions such semaphores to synchronize with each other.
+
+
+!!! A simple example
+Let us start with a simple example. 
+We will explain all the details in subsequent sections. 
+The following code creates two processes using the message ==fork== sent to a block. 
+In each process we enumerate numbers. 
+During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
+At the end of the loop we refresh the ==Transcript== output.
+
+[[[
+[ 1 to: 10 do: [ :i |
+  Transcript nextPutAll: i printString, ' '.
+  Processor yield ].
+Transcript endEntry ] fork.
+
+[ 101 to: 110 do: [ :i |
+  Transcript nextPutAll: i  printString, ' '.
+  Processor yield ].
+Transcript endEntry ] fork
+]]]
+
+Figure *@TwoInterleavingProcesses* shows the output produced by the execution of the snippet.
+
++Two interleaving processes.>file://figures/TwoInterleavedProcesses.pdf|width=60|label=TwoInterleavingProcesses+
+
+We see that the two programs run concurrently, each outputting a number at a time and not producing two numbers in a row.
+
+Let us look at what is a process.
+
+!!! Process Lifetime
+
+A process can be in different states depending on its life-time (""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"") as shown in Figure *@processStates*. We look at such states now.
+
++Process states:  A process (green thread) can be in one of the following states: ""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"".>file://figures/processStates.pdf|label=processStates+
+
+!!!!Creating and launching a new process
+
+To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
+
+[[[
+[ 1 to: 10 do: [ :i | i  printString traceCr ] 
+	] fork
+]]]
+
+This expression creates an instance of the class ==Process==. 
+It is added to the list of scheduled processes of the process scheduler (as we will explained later). 
+We say that this process is ==runnable==: 
+it can be potentially executed. 
+It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control.
+At this moment the block of this process will be executed.
+
+!!!! Creating a process without scheduling it
+We can also create a process which is not scheduled (hence ""suspended"") using the message ==newProcess==.
+
+You can i
+[[[
+| pr |
+pr := [ 1 to: 10 do: [ :i |
+   i  printString traceCr ] ] newProcess.
+pr inspect
+]]]
+
+
+This creates a process in ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler. 
+It is not that is not ==runnable==. It can be scheduled sending it the message ==resume==.
+
+In the inspector open by the previous expression, you can execute ==self resume== and then the process will be scheduled. 
+[[[
+self resume
+]]]
+
+
+Also ""suspended"" process can be executed immediately by sending it the ==run== message.
+The message ==run== suspends the current process and execute the receiver process at the highest priority.
+
+!!!! Passing arguments to a process
+You can also pass arguments to a process with the message ==newProcessWith: anArray== as follows:
+
+[[[
+| pr |
+pr := [ :max |
+  1 to: max do: [ :i |
+    i  printString crLog ] ] newProcessWith: #(20).
+pr resume
+]]]
+
+Note that the elements of the argument array are passed to the corresponding block parameters.
+
+!!!! Suspending and terminating a process
+A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
+A suspended processed can be rescheduled using the message ==resume==. 
+We can also terminate a process using the message ==terminate==. 
+A terminated process cannot be scheduled any more.
+
+!!!! Creating a waiting process
+As you see on Figure *@processStates* a process can be in a waiting state.
+It means that the process is blocked waiting to be rescheduled. 
+This happens when you need to synchronize concurrent processes.
+The basic synchronization mechanism is a semaphore and we will cover this deeply in subsequent sections.
+
+
+!!! Creation API Summary
+
+The process creation API is composed of messages sent to blocks. 
+
+- ==[ ] newProcess== creates a unscheduled process whose code is the receiver bloc. The priority is the one of the active process. 
+- ==[ ] newProcessWith: anArray==  same as above but pass arguments (defined by an array) to the block.
+- ==[ ] fork== creates a new scheduled process. It receives a ==resume== message so it is added to the queue corresponding to its priority. 
+- ==[ ] forkAt:== same as above but with the specification of the priority. 
+
+
+
+!!!First look at ProcessorScheduler
+
+Pharo implements time sharing where each process (green thread) has access to the physical processor during a given amount of time. 
+This is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule processes. 
+
+The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  
+To get the running process, you can execute: ==Processor activeProcess==.
+
+
+!!!!Process priority
+
+At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. For example, the following snippet is run at the same priority that background user tasks.
+
+[[[
+[ 1 to: 10 do: [ :i | i  printString crLog ]
+	] forkAt: Processor userBackgroundPriority
+]]]
+
+Next table lists all the predefined priorities together with their numerical value and purpose.
+
+|!Priority|!Name                    |
+| 100       | timingPriority           | 
+| | For processes that are dependent on real time. 
+| |For example, Delays (see later).
+|  98       | highIOPriority           | 
+| | For time–critical I/O processes, such as handling input from a network.
+|  90       | lowIOPriority            | 
+| | For most I/O processes, such as handling input from the user.
+|  70       | userInterruptPriority    | 
+| | For user processes desiring immediate service. 
+| | Processes run at this level will preempt the window scheduler and should,
+| | therefore, not consume the Processor forever.
+|  50       | userSchedulingPriority   | 
+| | For processes governing normal user interaction.
+| | The priority at which the window scheduler runs.
+|  30       | userBackgroundPriority   
+| | For user background processes.
+|  10       | systemBackgroundPriority 
+| | For system background processes. 
+| | Examples are an optimizing compiler or status checker.
+|   1       | systemRockBottomPriority 
+| | The lowest possible priority.
+
+The scheduler knows the currently active process as well as the lists of pending processes based on their priority.
+It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*.
+It uses the priority lists to manage processes that are suspended (and waiting to be scheduled) in the first in first out way.
+
++The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=60|label=SchedulerSimple+
+
+There are simple rules to interrupt and change the process to be run:
+
+- Processes with higher priority can interrupt lower priority processes if they have to be executed. 
+
+- Processes with the same priority are executed in the same order they were added to scheduled process list.
+
+- As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
+
+
+@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+
+!!! Process
+
+A process is an instance of the class ==Process==. 
+This is class is a subclass of the class ==Link==. 
+A link is an element of a linked list (class ==LinkedList==). 
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance. 
+Note that this linked list is tailored for the Process scheduler logic. 
+Better use another one if you need one.
+
+A process has the following instance variables:
+- priority: holds an integer to represent the priority level of the process.
+- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
+- myList: the list of processes to which the suspended process belongs to. 
+
+
+
+!!! Conclusion
+We presented briefly the concurrency model of Pharo: preemptive and collaborative. A process of higher priority can stop the execution of processes of lower ones. 
+Processes at the same priority should explicit return control using the ==yield== message.
+We presented the notion of process (green thread) and process scheduler. 
+In the next chapter we explain semaphores since we will explain how the scheduler uses delays to performing its scheduling. 
+
+
+
+!! Semaphores
+
+Often we encounter situations where we need to synchronize processes.
+For example, imagine that you only have one pen and that there are several writers wanting to use it.
+You will wait for the pen and once the pen is released, you will be able to access and use it.
+Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen.
+When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
+Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
+
+In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself.
+
+!!! Understanding semaphores
+
+A Semaphore is an object used to synchronize multiple processes.
+A process ''waits'' for an event to occur by sending the message ==wait== to a semaphore.
+Another process then ''signals'' that the event has occurred by sending the message ==signal== to the Semaphore.
+The process waiting for the signal will not proceed until one is sent.
+
+A semaphore is a signalling entity. 
+Processes will wait for its signal on a waiting list. 
+
+A semaphore will only release as many processes from ==wait== messages as it has received signal messages.
+When a semaphore receives a ==wait== message for which no corresponding ==signal== has been sent, the process sending the ==wait== is suspended.
+Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
+
+Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a
+==Process==, it dequeues processes in the order in which they waited on the semaphore.
+
+The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
+
+A semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. 
+When the process accessing the resources releases it, it signals it to the semaphore. 
+The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
+
+
++The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=60|label=Sema1+
+
++The process P4 wants to access the resources: it sends wait to the semaphore.>file://figures/Semaphores2.pdf|width=60|label=Sema2+
+
++P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=60|label=Sema3+
+
++P0 has finished to use the resources: it signals it to the semaphore.>file://figures/Semaphores4.pdf|width=60|label=Sema4+
+
++The semaphore resume the first waiting process (P1).>file://figures/Semaphores5.pdf|width=60|label=Sema5+
+
++The resumed process is now scheduled by the scheduler.>file://figures/Semaphores6.pdf|width=60|label=Sema6+
+
+!!! An example
+
+Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
+
+[[[
+| semaphore |
+semaphore := Semaphore new.
+
+[ "Do a first job ..."
+	'Job1 started' crLog.
+	semaphore wait. 
+	'Job1 finished' crLog
+	] fork.
+
+[ "Do a second job ..."
+	'Job2 started' crLog.
+	semaphore wait. 
+	'Job2 finished' crLog
+	] fork.
+semaphore inspect
+]]]
+
+You should see in the transcript the following:
+
+[[[
+'Job1 started'
+'Job2 started'
+]]]
+
+What you see is that the two processes stopped. They did not finish their job. 
+When a semaphore receives a ==wait== message, it will stop the process sending the message and add the process to its pending list. 
+
+Now in the inspector on the semaphore execute ==self signal==.
+This will have as effect to schedule one of the waiting process and one of the job will finish its task.
+
+
+!!! Example: Prearmed Semaphore
+
+Let us modify slightly the previous example. 
+We send a ==signal== message to the semaphore prior to creating the processes.
+
+[[[
+| semaphore |
+semaphore := Semaphore new.
+semaphore signal. 
+[ "Do a first job ..."
+	'Job1 started' crLog.
+	semaphore wait. 
+	'Job1 finished' crLog
+	] fork.
+
+[ "Do a second job ..."
+	'Job2 started' crLog.
+	semaphore wait. 
+	'Job2 finished' crLog
+	] fork.
+semaphore
+]]]
+
+What you see here is that one of the waiting process is proceed.
+
+[[[
+'Job1 started'
+'Job1 finished'
+'Job2 started'
+]]]
+
+This example illustrates that a semaphore a ==signal== does not have to be done after a ==wait==.
+This is important to make sure that one certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another one. 
+
+A semaphore holds a counter of signals that it receives but did not lead to a process execution, and it will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
+
+
+
+!!! Pharo implementation 
+
+A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
+
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process can continue its operations. On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed. 
+
+Here is the implemntation of ==signal== and ==wait== in Pharo.
+
+The signal message comment shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+
+[[[
+Semaphore >> signal
+	"Primitive. Send a signal through the receiver. If one or more processes 
+	have been suspended trying to receive a signal, allow the first one to 
+	proceed. If no process is waiting, remember the excess signal."
+
+	<primitive: 85>
+	self primitiveFailed
+
+	"self isEmpty    
+		ifTrue: [excessSignals := excessSignals+1]    
+		ifFalse: [Processor resume: self removeFirstLink]"
+]]]
+
+The description of the wait primitive shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
+On the contrary, when there is no signals on excess, then the process is suspended.
+
+[[[
+Semaphore >> wait
+	"Primitive. The active Process must receive a signal through the receiver 
+	before proceeding. If no signal has been sent, the active Process will be 
+	suspended until one is sent."
+
+	<primitive: 86>
+	self primitiveFailed
+
+	"excessSignals>0  
+		ifTrue: [excessSignals := excessSignals-1]  
+		ifFalse: [self addLastLink: Processor activeProcess suspend]"
+]]]
+
+
+!!! wait and signal interplay
+
+The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
+
+[[[
+| semaphore |
+semaphore := Semaphore new. 
+[ 'Pharo ' crLog ] fork. 
+
+['is ' crLog .
+semaphore wait.
+'super ' crLog. 
+semaphore signal] fork.
+
+['really ' crLog. 
+semaphore signal.
+semaphore wait.
+'cool!' crLog ] fork
+]]]
+
+You should obtain ==Pharo is really super cool!==
+
+Let us describe what is happening. 
+
+- The first one prints =='Pharo'==. 
+- The second one prints =='is '== and waits.
+- The third one prints =='really '== and signal the semaphore and waits. It is added to the waiting list after the second process.
+- Since the third process signaled the semaphore, the first waiting process (the second one) is scheduled and prints =='super '== and signals the semaphore. 
+- The third process is scheduled and prints: =='cool!'==
+
+
+
+!! Scheduler's principles
+
+
+Un processus signifie à un sémaphore qu’il libère la ressource en lui envoyant le message signal. 
+Le sémaphore envoie alors un message resume au premier processus en attente de sa file d’attente, 
+ce qui rend ce dernier activable, c’est-à-dire qu’il est ajouté dans la file d’attente du 
+ProcessorScheduler correspondant à sa priorité (voir figure 9-2 ci-après).
+
+
+
+
+
+
++BBB>file://figures/ProcessorStateSchedulerSemaphore.pdf|label=ProcessorStateSchedulerSemaphore+
+
+
+Now we can revisit the different states of a process by looking its interaction with the process scheduler and 
+semaphores as shown in *@ProcessorStateScheduler*.
+
+- active: it is currently executed.
+- activable: it is one of the waiting queue of the scheduler.
+- waiting: it is suspendedn on a semaphore. It is the waiting list of a semaphore and it is not yet activable.
+- suspended: if this is the active process it is interrupted and can be reactivated later, else it is removed from the queue of the activable process that it belongs to. 
+
+
++Revisiting the process states>file://figures/ProcessorStateScheduler.pdf|label=ProcessorStateScheduler+
+
+
+
+
+
+
+!!!Delay
+In case you need to pause execution for some time, you can use ""Delay"".
+
+Delays can be instantiated and set up by sending ==forSeconds:== or ==forMilliseconds:== to the class ==Delay== and executed by sending it ==wait== message.
+
+For example:
+[[[
+| delay |
+delay := Delay forSeconds: 3.
+[ 1 to: 10 do: [:i |
+  Transcript show: i printString ; cr.
+  delay wait ] ] fork
+]]]
+will print a number each 3 seconds.
+
+Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
+
+Typical needs for delas are 
+- repeat an action every x milliseconds.
+- wait a given amount of time before executing an action. 
+
+
+!!! Example
+
+[[[
+[
+| betweenPing |  
+betweenPing := Delay forMilliseconds: 300.
+10 timesRepeat: [ 
+   'ping' crLog. 
+   betweenPing wait] 
+   ] forkAt: Processor userBackgroundPriority.
+	  
+[
+| betweenPong |  
+betweenPong := Delay forMilliseconds: 100.
+10 timesRepeat: [ 
+   'PONG' crLog. 
+   betweenPong wait]
+   ] forkAt: Processor userBackgroundPriority.
+]]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+!! Synchronisation
+
+When multiple threads share and modify the same resources we can easily end up in 
+broken state. 
+
+!!! Motivation
+Let us imagine that two threads are accessing an account to redraw money.
+When the threads are not synchronised you may end up to the following situation
+that one thread access information while the other thread is actually modifying. 
+
+Here we see that we redraw 1000 and 200 but since the thread B reads before 
+the other thread finished to commit its changes, we got desynchronised.
+
+|!Thread A: account debit: 1000 |!Thread B: account debit: 200 |
+| Reading: account value -> 3000 | | 
+| account debit: 1000 | Reading: account value = 3000 |
+| account value -> 2000 | account debit: 200 |
+| | account value -> 2800  
+
+The solution is to make sure that a thread cannot access a resources while another one is modifying it. Basically we want that all the threads sharing a resources are mutually exclusive. 
+
+When several access a shared resources, only one gets the resources, the other threads got suspended, waiting for the first thread to have finished and release the resources.
+
+
+!!! Using a semaphore
+
+We can use a semaphore to control the execution of several threads. 
+
+Here we want to make sure that we can do 10 debit and 10 deposit of the same amount and that we get the same amount at the end. 
+
+[[[
+|lock account|
+lock := Semaphore new.
+account := 3000.
+[ 10 timesRepeat: [
+	lock wait.
+	counter := counter + 100.
+	compter crLog.
+	lock signal ]
+	] fork.
+	
+[ 10 timesRepeat: [
+	counter := counter - 100.
+	counter crLog. 
+	lock signal. 
+	lock wait ]
+	] fork
+]]]
+
+
+Notice the pattern, the thread are not symmetrical. 
+The first one will first wait that the resources is accessible and perform his work 
+and signals that he finished. 
+The second one will work and signal and wait to perform the next iteration.
+
+
+The same problem can be solved in a more robust wait using Mutex and critical sections
+as we see present in the following section.
+
+!!! Using a Mutex
+
+A Mutex is an object to protect a share resources. An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
+
+In the following example the expressions ==Processor yield== ensures that thread of the same priority can get a chance to be executed. 
+
+[[[
+|lock account|
+lock := Mutex new.
+account := 3000.
+[10 timesRepeat: [ Processor yield.
+	lock critical: [ account := counter + 100.
+					account crLog ] ]
+	] fork.
+
+[10 timesRepeat: [ Processor yield.
+	lock critical: [ account := counter - 100.
+					account crLog ] ]
+	] fork
+]]]
+
+!!! Shared Queue
+
+Instances de la classe SharedQueue  –  Canaux d'échange d'objets 
+•  Analogues aux sockets/streams ou pipes unix  –  Mais, synchronisés 
+•  1 écrivain ou 1 lecteur à la fois 
+•  Les lecteurs sont bloqués quand la file est vide
+
+[[[
+|file| 
+file := SharedQueue new.
+[
+	[ |number| "reader 1"
+	number := file next.
+	number ifNil: [Processor terminateActive].
+	number crLog ] repeat
+	] fork. 
+]]]
+
+[[[
+	[ |counter| "reader 2" 
+	counter := 0. 
+	[file next ifNil: [ ('total = ', counter asString) crLog.
+		Processor terminateAc3ve].
+		counter := counter + 1 ] repeat 
+	] fork.
+]]]
+
+
+ [[[
+[	
+	|delayBetweenWrite|
+	delayBetweenWrite := Delay forMilliseconds: 100.   
+	1 to: 10 do: [:numb| 
+		delayBetweenWrite wait.
+		file nextPut: numb].
+	2 timesRepeat: [file nextPut: nil]
+	] fork. 
+]]]
+
+
+!! Monitor
+
+A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
+
+# At any time, only one process can execute code inside a critical section of a monitor.
+# A monitor is reentrant, which means that the active process in a monitor never gets blocked when it enters a (nested) critical section of the same monitor.
+#  Inside a critical section, a process can wait for an event that may be coupled to a certain condition. If the condition is not fulfilled, the process leaves the monitor temporarily (to let other processes enter) and waits until another process signals the event. Then, the original process checks the condition again (this is often necessary because the state of the monitor could have changed in the meantime) and continues if it is fulfilled.
+# The monitor is fair, which means that the process that is waiting on a signaled condition the longest gets activated first.
+# The monitor allows you to define timeouts after which a process gets activated automatically.
+
+
+!!! Basic usage:
+
+Monitor>>critical: aBlock
+Critical section.
+Executes aBlock as a critical section. At any time, only one process can execute code in a critical section.
+NOTE: All the following synchronization operations are only valid inside the critical section of the monitor!
+
+Monitor>>wait
+Unconditional waiting for the default event.
+The current process gets blocked and leaves the monitor, which means that the monitor allows another process to execute critical code. When the default event is signaled, the original process is resumed.
+
+Monitor>>waitWhile: aBlock
+Conditional waiting for the default event.
+The current process gets blocked and leaves the monitor only if the argument block evaluates to true. This means that another process can enter the monitor. When the default event is signaled, the original process is resumed, which means that the condition (argument block) is checked again. Only if it evaluates to false, does execution proceed. Otherwise, the process gets blocked and leaves the monitor again...
+
+Monitor>>waitUntil: aBlock
+Conditional waiting for the default event.
+See Monitor>>waitWhile: aBlock.
+
+Monitor>>signal
+One process waiting for the default event is woken up.
+
+Monitor>>signalAll
+All processes waiting for the default event are woken up.
+
+!!! We need one example here
+
+
+
+
+
+
+
+!! Mutex implementation
+
+I would love to understand it :)
+
+
+
+!! ShareQueue: a Semaphore Example
+
+@@todo translate stef! 
+
+Une SharedQueue, ou file partagée, est une structure FIFO (First In First Out, le premier élément entré est le premier sorti), dotée de sémaphores de protection contre les accès concurrents. Cette structure est utilisée dans les situations où plusieurs processus fonctionnent simultanément et sont susceptibles d’accéder à cette même structure.
+Sa définition est la suivante :
+
+
+[[[
+Object subclass: #SharedQueue
+	instanceVariableNames: 'contentsArray readPosition writePosition accessProtect readSynch ' 
+	package: 'Collections-Sequenceable'
+]]]
+
+
+==accessProtect== est un sémaphore d’exclusion mutuelle pour l’écriture, tandis que readSync est utilisé pour la synchronisation en lecture. Ces variables sont instanciées par la méthode d’initialisation de la façon suivante :
+
+[[[
+accessProtect := Semaphore forMutualExclusion.
+readSynch := Semaphore new
+]]]
+
+Ces deux sémaphores sont utilisés dans les méthodes d’accès et d’ajouts d’éléments (voir figure 6- 5).
+
+[[[
+SharedQueue >> next
+	| value |
+	readSynch wait.
+	accessProtect
+		critical: [readPosition = writePosition
+				ifTrue: [self error: 'Error in SharedQueue synchronization'.
+					Value := nil]
+				ifFalse: [value := contentsArray at: readPosition.
+					contentsArray at: readPosition put: nil.
+					readPosition := readPosition + 1]].
+	^ value
+]]]
+
+Dans la méthode d’accès, next, le sémaphore de synchronisation en lecture « garde » l’entrée de la méthode (ligne 3). Si un processus envoie le message next alors que la file est vide, il sera suspendu et placé dans la file d’attente du sémaphore readSync par la méthode wait. Seul l’ajout d’un nouvel élément pourra le rendre à nouveau actif. La section critique gérée par le sémaphore accessProtect (lignes 4 à 10) garantit que la portion de code contenue dans le bloc est exécutée sans qu’elle puisse être interrompue par un autre sémaphore, ce qui rendrait l’état de la file inconsistant.
+
+Dans la méthode d’ajout d’un élément, ==nextPut:==, la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
+
+
+[[[
+SharedQueue >> nextPut: value 
+	accessProtect
+		critical: [ writePosition > contentsArray size
+				ifTrue: [self makeRoomAtEnd].
+			contentsArray at: writePosition put: value.
+			WritePosition := writePosition + 1].
+			readSynch signal.
+			^ value
+]]]
+
+
+
+
+
+
+
+
+
+
+
+!!! Conclusion
+We presented the key elements of basic concurrent programming in Pharo and some implementation details.
+
+% Local Variables:
+% eval: (flyspell-mode -1)
+% End:
