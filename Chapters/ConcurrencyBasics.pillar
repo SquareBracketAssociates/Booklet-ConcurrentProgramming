@@ -251,20 +251,22 @@ Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the pri
 
 The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
 
-+Semaphore principle: a semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. When the process accessing the resources releases it, it signals it to the semaphore. The semaphore resume the first waiting process which is added to the suspended list of the scheduler. >file://figures/09-02.pdf|width=100|label=Sema1+
+A semaphore has a list of waiting processes that want to access to the resource protected by the semaphore. 
+When the process accessing the resources releases it, it signals it to the semaphore. 
+The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
 
 
-+The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=100|label=Sema1+
++The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=60|label=Sema1+
 
-+The process P4 wants to access the resources: it sends wait to the semaphare.>file://figures/Semaphores2.pdf|width=100|label=Sema2+
++The process P4 wants to access the resources: it sends wait to the semaphore.>file://figures/Semaphores2.pdf|width=60|label=Sema2+
 
-+P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=100|label=Sema3+
++P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=60|label=Sema3+
 
-+P0 has finished to use the resources: it signals it to the semapharore.>file://figures/Semaphores4.pdf|width=100|label=Sema4+
++P0 has finished to use the resources: it signals it to the semaphore.>file://figures/Semaphores4.pdf|width=60|label=Sema4+
 
-+The semaphare resume the first waiting process (P1).>file://figures/Semaphores5.pdf|width=100|label=Sema5+
++The semaphore resume the first waiting process (P1).>file://figures/Semaphores5.pdf|width=60|label=Sema5+
 
-+The resumed process is now scheduled by the scheduler.>file://figures/Semaphores6.pdf|width=100|label=Sema6+
++The resumed process is now scheduled by the scheduler.>file://figures/Semaphores6.pdf|width=60|label=Sema6+
 
 !!! An example
 
