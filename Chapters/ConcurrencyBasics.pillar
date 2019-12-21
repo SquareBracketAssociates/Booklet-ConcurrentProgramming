@@ -313,85 +313,6 @@ Now in the inspector on the semaphore execute ==self signal==.
 This schedules one of the waiting process and one of the job will finish its task.
 If we do not send a new signal message to the semaphore, the second waiting process will never be scheduled.
 
-!!! Example: Prearmed semaphore
-
-Let us modify slightly the previous example. 
-We send a ==signal== message to the semaphore prior to creating the processes.
-
-[[[
-| semaphore |
-semaphore := Semaphore new.
-semaphore signal. 
-[ "Do a first job ..."
-	'Job1 started' crTrace.
-	semaphore wait. 
-	'Job1 finished' crTrace
-	] fork.
-
-[ "Do a second job ..."
-	'Job2 started' crTrace.
-	semaphore wait. 
-	'Job2 finished' crTrace
-	] fork.
-semaphore
-]]]
-
-What you see here is that one of the waiting process is proceed.
-
-[[[
-'Job1 started'
-'Job1 finished'
-'Job2 started'
-]]]
-
-This example illustrates that a semaphore a ==signal== does not have to be done after a ==wait==.
-This is important to make sure that one certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another one. 
-
-A semaphore holds a counter of signals that it receives but did not lead to a process execution, and it will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
-
-
-
-!!! Pharo implementation 
-
-A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
-
-If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process can continue its operations. On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed. 
-
-Here is the implemntation of ==signal== and ==wait== in Pharo.
-
-The signal message comment shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
-
-[[[
-Semaphore >> signal
-	"Primitive. Send a signal through the receiver. If one or more processes 
-	have been suspended trying to receive a signal, allow the first one to 
-	proceed. If no process is waiting, remember the excess signal."
-
-	<primitive: 85>
-	self primitiveFailed
-
-	"self isEmpty    
-		ifTrue: [excessSignals := excessSignals+1]    
-		ifFalse: [Processor resume: self removeFirstLink]"
-]]]
-
-The description of the wait primitive shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
-On the contrary, when there is no signals on excess, then the process is suspended.
-
-[[[
-Semaphore >> wait
-	"Primitive. The active Process must receive a signal through the receiver 
-	before proceeding. If no signal has been sent, the active Process will be 
-	suspended until one is sent."
-
-	<primitive: 86>
-	self primitiveFailed
-
-	"excessSignals>0  
-		ifTrue: [excessSignals := excessSignals-1]  
-		ifFalse: [self addLastLink: Processor activeProcess suspend]"
-]]]
-
 
 !!! wait and signal interplay
 
@@ -422,6 +343,128 @@ Let us describe what is happening.
 - The third one prints =='really '== and signal the semaphore and waits. It is added to the waiting list after the second process.
 - Since the third process signaled the semaphore, the first waiting process (the second one) is scheduled and prints =='super '== and signals the semaphore. 
 - The third process is scheduled and prints: =='cool!'==
+
+!!! Prearmed semaphore
+
+A process wanted a resource protected by a semaphore does not have to be systematically put on the waiting list.
+There are situations where if it would be the case, the system would be blocked forever because no process could signal
+the semaphore: an no pending process would be resumed. 
+
+A semaphore can be rearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages. 
+In such a case, a process requesting to access the resources will just proceed and be scheduled without first being queued to the waiting list.
+
+A semaphore holds a counter of signals that it receives but did not lead to a process execution.
+It will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
+
+!!!! Example 
+
+Let us modify slightly the previous example.
+We send a ==signal== message to the semaphore prior to creating the processes.
+
+[[[
+| semaphore |
+semaphore := Semaphore new.
+semaphore signal. 
+[ "Do a first job ..."
+	'Job1 started' crTrace.
+	semaphore wait. 
+	'Job1 finished' crTrace
+	] fork.
+
+[ "Do a second job ..."
+	'Job2 started' crTrace.
+	semaphore wait. 
+	'Job2 finished' crTrace
+	] fork.
+semaphore inspect
+]]]
+
+What you see here is that one of the waiting process is proceed.
+
+[[[
+'Job1 started'
+'Job1 finished'
+'Job2 started'
+]]]
+
+This example illustrates that signalling a semaphore does not have to be done after a ==wait==.
+
+This is important to make sure that on certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another ones. 
+
+
+We can ask a semaphore whether if it is prearmed using the message ==isSignaled==. 
+[[[
+sema := Semapharo new.
+sema signal.
+sema isSignaled
+>>> true
+]]]
+
+
+!!! forMutualExclusion
+
+Sometimes we need to ensure that a section of code is only executed when no other process is executing it. 
+We want to make sure that only one process at a time executes the code. 
+This is call a critical section. 
+
+For this the class ==Semaphore== offers the message ==critical: aBlock==.
+It evaluates aBlock only if the receiver is not currently in the process of running the ==critical:== message. 
+If the receiver is, evaluate aBlock after the other ==critical:== message is finished.
+To use a critical, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==
+
+!!!! Example 
+
+[[[
+
+
+]]]
+ 
+
+
+
+
+
+!!! Implementation 
+
+A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process can continue its operations. 
+On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed.
+
+Here is the implementation of ==signal== and ==wait== in Pharo.
+
+The ==signal== method shows that If there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+
+[[[
+Semaphore >> signal
+	"Primitive. Send a signal through the receiver. If one or more processes 
+	have been suspended trying to receive a signal, allow the first one to 
+	proceed. If no process is waiting, remember the excess signal."
+
+	<primitive: 85>
+	self primitiveFailed
+
+	"self isEmpty    
+		ifTrue: [excessSignals := excessSignals+1]    
+		ifFalse: [Processor resume: self removeFirstLink]"
+]]]
+
+The ==wait== method shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
+On the contrary, when there is no signals on excess, then the process is suspended.
+
+[[[
+Semaphore >> wait
+	"Primitive. The active Process must receive a signal through the receiver 
+	before proceeding. If no signal has been sent, the active Process will be 
+	suspended until one is sent."
+
+	<primitive: 86>
+	self primitiveFailed
+
+	"excessSignals>0  
+		ifTrue: [excessSignals := excessSignals - 1]  
+		ifFalse: [self addLastLink: Processor activeProcess suspend]"
+]]]
+
 
 
 
@@ -511,7 +554,7 @@ betweenPong := Delay forMilliseconds: 100.
 
 
 
-!! Synchronisation
+!! Synchronisations
 
 When multiple threads share and modify the same resources we can easily end up in 
 broken state. 
@@ -591,6 +634,134 @@ account := 3000.
 	] fork
 ]]]
 
+
+
+!!! About Rendez-vous
+
+As we saw, using ==wait== and ==signal== we can  make sure that two programs running in separate threads can be executed one after the other in order.
+
+The following example is freely inspired from "The little book of semaphores book.
+Imagine that we want to have one process reading from file and another process displaying the read contents. 
+Obviously we would like to ensure that the reading happens before the display. 
+We can enforce such order by using ==signal== and ==wait== as following
+
+[[[
+| readingIsDone read file |
+file := FileSystem workingDirectory / 'oneLineBuffer'.
+file writeStreamDo: [ :s| s << 'Pharo is cool' ; cr ].
+readingIsDone := Semaphore new. 
+[
+'Reading line' crTrace.
+read := file readStream upTo: Character cr.
+readingIsDone signal.
+] fork.
+[ 
+readingIsDone wait.	
+'Displaying line' crTrace.
+read crTrace.
+] fork.
+]]]
+
+Here is the output
+
+[[[
+'Reading line'
+'Displaying line'
+'Pharo is cool'
+]]]
+
+
+!!!! Rendez-vous
+
+Now a question is how can be generalize such a behavior so that we can have two programs that work freely to a point 
+where a part of the other has been performed. 
+ 
+For example imagine that we have two prisoners that to escape have to pass a barrier together (their order is irrelevant but they should do it consecutively) and that before that they have to run to the barrier. 
+
+The following output is not permitted. 
+[[[
+'a running to the barrier'
+'a jumping over the barrier'
+'b running to the barrier'
+'b jumping over the barrier'
+]]]
+
+[[[
+'b running to the barrier'
+'b jumping over the barrier'
+'a running to the barrier'
+'a jumping over the barrier'
+]]]
+
+The following cases are permitted. 
+[[[
+'a running to the barrier'
+'b running to the barrier'
+'b jumping over the barrier'
+'a jumping over the barrier'
+]]]
+
+[[[
+'a running to the barrier'
+'b running to the barrier'
+'a jumping over the barrier'
+'b jumping over the barrier'
+]]]
+
+[[[
+'b running to the barrier'	
+'a running to the barrier'
+'b jumping over the barrier'
+'a jumping over the barrier'
+]]]
+
+[[[
+'b running to the barrier'	
+'a running to the barrier'
+'a jumping over the barrier'
+'b jumping over the barrier'
+]]]
+
+Here is a code without any synchronisation. We randomly shuffle an array with two blocks and execute them. 
+It produces the non permitted output. 
+
+[[[
+{  
+['a running to the barrier' crTrace.
+'a jumping over the barrier' crTrace ] 
+.
+[ 'b running to the barrier' crTrace.
+'b jumping over the barrier' crTrace ] 
+} shuffled do: [ :each | each fork ]
+]]]
+
+
+Here is a possible solution using two semaphores. 
+
+[[[
+| aAtBarrier bAtBarrier |
+aAtBarrier := Semaphore new.
+bAtBarrier := Semaphore new.
+
+{[ 'a running to the barrier' crTrace.
+aAtBarrier signal. 
+bAtBarrier wait.
+'a jumping over the barrier' crTrace ] 
+.
+[ 'b running to the barrier' crTrace.
+bAtBarrier signal. 
+aAtBarrier wait.
+'b jumping over the barrier' crTrace ] 
+} shuffled do: [ :each | each fork ]
+]]]
+
+
+
+
+
+
+
+
 !!! Shared Queue
 
 Instances de la classe SharedQueue  –  Canaux d'échange d'objets 
@@ -602,7 +773,7 @@ Instances de la classe SharedQueue  –  Canaux d'échange d'objets
 |file| 
 file := SharedQueue new.
 [
-	[ |number| "reader 1"
+	[ | number | "reader 1"
 	number := file next.
 	number ifNil: [Processor terminateActive].
 	number crTrace ] repeat
@@ -610,7 +781,7 @@ file := SharedQueue new.
 ]]]
 
 [[[
-	[ |counter| "reader 2" 
+	[ | counter | "reader 2" 
 	counter := 0. 
 	[file next ifNil: [ ('total = ', counter asString) crTrace.
 		Processor terminateAc3ve].
@@ -621,7 +792,7 @@ file := SharedQueue new.
 
  [[[
 [	
-	|delayBetweenWrite|
+	| delayBetweenWrite |
 	delayBetweenWrite := Delay forMilliseconds: 100.   
 	1 to: 10 do: [:numb| 
 		delayBetweenWrite wait.
@@ -631,7 +802,13 @@ file := SharedQueue new.
 ]]]
 
 
-!! Monitor
+
+
+
+
+
+
+!!! Monitor
 
 A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
 
