@@ -1,4 +1,0 @@
-
-${inputFile:Chapters/ConcurrencyBasics.pillar}$
-
-%${inputFile:Chapters/ConcurrencyBasics.pillar}$

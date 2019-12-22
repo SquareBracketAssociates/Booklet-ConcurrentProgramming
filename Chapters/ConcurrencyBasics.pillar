@@ -189,9 +189,7 @@ It uses the priority lists to manage processes that are suspended (and waiting t
 There are simple rules to interrupt and change the process to be run:
 
 - Processes with higher priority can interrupt lower priority processes if they have to be executed. 
-
 - Processes with the same priority are executed in the same order they were added to scheduled process list.
-
 - As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
 
@@ -210,6 +208,42 @@ A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
 - myList: the list of processes to which the suspended process belongs to. 
+
+
+!!! Yielding the computation
+
+Let us start with a small example. We create two processes of the same priority
+ that perform a loop displaying numbers.
+
+[[[
+[1 to: 10 do: [:i| i trace. ' ' trace ]] fork.
+[11 to: 20 do: [:i| i trace. ' ' trace ]] fork.
+]]]
+
+We obtain the following output
+[[[
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+]]]
+
+This is normal since the processes have the same priority. 
+They are scheduled and executed one after the other.
+During the execution of the one of the process nothing forces it to release computation. 
+Therefore it executes until it finishes. 
+
+!!!! Using yield
+
+We modify the example to introduce an explicit return of control to the processor
+
+[[[
+[1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+[11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+]]]
+
+We obtain the following trace showing that each process gave back the control to the scheduler after each loop step.
+[[[
+1 11 2 12 3 13 4 14 5 15 6 16 7 17 8 18 9 19 10 20 
+]]]
+
 
 
 
@@ -489,33 +523,71 @@ Pharo offers other abstractions to synchronize such as Mutexes (also named recur
 !! Scheduler's principles
 
 In this chapter we revisit the way to scheduler works.
-In particular we show how delay is used and implemented.
+In particular we show how yield is implemented.
+Finally we show how delays are used and implemented.
 
 !!! Revisiting Process states
 
-A process (thread) notifies a semaphore that it frees a resources by sending the message ==signal==. 
-The first waiting process is resumed and added to the list of Processor waiting list. 
-
-
-
-
-
+We saw previously the differen states a process can be in. 
+We also saw semaphores which suspend and resume suspended processes. 
+We revisit the different states of a process by looking its interaction with the process scheduler and 
+semaphores as shown in *@ProcessorStateScheduler* : 
+- executing: it is currently executed.
+- runnable: it is one of the waiting queue of the scheduler.
+- waiting: it is suspendedn on a semaphore. It is the waiting list of a semaphore and it is not yet activable.
+- suspended: if this is the active process it is interrupted and can be reactivated later, else it is removed from the queue of the activable process that it belongs to. 
+- terminated: a process cannot be scheduled or activated anymore.
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 
-Now we can revisit the different states of a process by looking its interaction with the process scheduler and 
-semaphores as shown in *@ProcessorStateScheduler*.
 
-- active: it is currently executed.
-- activable: it is one of the waiting queue of the scheduler.
-- waiting: it is suspendedn on a semaphore. It is the waiting list of a semaphore and it is not yet activable.
-- suspended: if this is the active process it is interrupted and can be reactivated later, else it is removed from the queue of the activable process that it belongs to. 
+!!! yield
+We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
+Let us detail how the collaboration occurs: a process has to explicitly give back its execution. 
+As we show in the previous chapter, it does it by sending the message ==yield== to the scheduler. 
+
+
+Now let us study the implementation of the method ==yield== itself. 
+It is really elegant. It creates a process whose execution will signal a semaphore
+and the current process will wait until the created process is scheduler by the processor. 
+
+[[[
+ProcessScheduler >> yield
+	"Give other Processes at the current priority a chance to run."
+	<primitive: 167>
+
+	| semaphore |
+	semaphore := Semaphore new.
+	[ semaphore signal ] fork.
+	semaphore wait
+]]]
+
+
+Figure *@yield* illustrates the execution of the two following processes yielding their computation.
+
+[[[
+[1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+[11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+]]]
+
+
++Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
+
+
+
+
+
 
 
 
 
 !!!Delay
+The class ==Delay== is a central class of Pharo kernel. 
+Typical needs for using delays are 
+- repeat an action every x milliseconds,
+- wait a given amount of time before executing an action. 
+
 In case you need to pause execution for some time, you can use ""Delay"".
 
 Delays can be instantiated and set up by sending ==forSeconds:== or ==forMilliseconds:== to the class ==Delay== and executed by sending it ==wait== message.
@@ -532,9 +604,6 @@ will print a number each 3 seconds.
 
 Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
 
-Typical needs for delas are 
-- repeat an action every x milliseconds.
-- wait a given amount of time before executing an action. 
 
 
 !!! Example
@@ -556,13 +625,6 @@ betweenPong := Delay forMilliseconds: 100.
    betweenPong wait]
    ] forkAt: Processor userBackgroundPriority.
 ]]]
-
-
-
-
-!!! Yield
-
-
 
 
 
@@ -980,7 +1042,7 @@ SharedQueue >> nextPut: value
 		critical: [ writePosition > contentsArray size
 				ifTrue: [self makeRoomAtEnd].
 			contentsArray at: writePosition put: value.
-			WritePosition := writePosition + 1].
+			writePosition := writePosition + 1].
 			readSynch signal.
 			^ value
 ]]]

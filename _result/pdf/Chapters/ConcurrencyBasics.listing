@@ -1,8 +1,0 @@
-SharedQueue >> nextPut: value
-	accessProtect
-		critical: [ writePosition > contentsArray size
-				ifTrue: [self makeRoomAtEnd].
-			contentsArray at: writePosition put: value.
-			WritePosition := writePosition + 1].
-			readSynch signal.
-			^ value
