@@ -19,7 +19,7 @@
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \@writefile{toc}{\changetocdepth  {1}}
 \providecommand\tcolorbox@label[2]{}
-\@writefile{toc}{\contentsline {chapter}{Illustrations}{ii}{section*.1}}
+\@writefile{toc}{\contentsline {chapter}{Illustrations}{iii}{section*.1}}
 \@writefile{toc}{\needspace {3\baselineskip }}
 \@writefile{toc}{\contentsline {chapter}{\chapternumberline {1}Concurrent Programming in Pharo}{3}{chapter.1}}
 \@writefile{toc}{\contentsline {section}{\numberline {1.1}Studying an example}{3}{section.1.1}}
@@ -49,18 +49,22 @@
 \newlabel{Sema1}{{\M@TitleReference {2-1}{Understanding semaphores}}{12}{The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources}{figure.2.1}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2-2}{\ignorespaces The process P4 wants to access the resources: it sends wait to the semaphore.}}{12}{figure.2.2}}
 \newlabel{Sema2}{{\M@TitleReference {2-2}{Understanding semaphores}}{12}{The process P4 wants to access the resources: it sends wait to the semaphore}{figure.2.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2-3}{\ignorespaces P4 is added to the waiting list.}}{12}{figure.2.3}}
-\newlabel{Sema3}{{\M@TitleReference {2-3}{Understanding semaphores}}{12}{P4 is added to the waiting list}{figure.2.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2-4}{\ignorespaces P0 has finished to use the resources: it signals it to the semaphore.}}{13}{figure.2.4}}
-\newlabel{Sema4}{{\M@TitleReference {2-4}{Understanding semaphores}}{13}{P0 has finished to use the resources: it signals it to the semaphore}{figure.2.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2-5}{\ignorespaces The semaphore resumes the first waiting process (P1).}}{13}{figure.2.5}}
-\newlabel{Sema5}{{\M@TitleReference {2-5}{Understanding semaphores}}{13}{The semaphore resumes the first waiting process (P1)}{figure.2.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2-6}{\ignorespaces The resumed process is now scheduled by the scheduler.}}{13}{figure.2.6}}
-\newlabel{Sema6}{{\M@TitleReference {2-6}{Understanding semaphores}}{13}{The resumed process is now scheduled by the scheduler}{figure.2.6}{}}
+\@writefile{toc}{\contentsline {subsection}{Details }{12}{section*.8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-3}{\ignorespaces P4 is added to the waiting list.}}{13}{figure.2.3}}
+\newlabel{Sema3}{{\M@TitleReference {2-3}{Understanding semaphores}}{13}{P4 is added to the waiting list}{figure.2.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-4}{\ignorespaces P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process. }}{13}{figure.2.4}}
+\newlabel{Sema4}{{\M@TitleReference {2-4}{Understanding semaphores}}{13}{P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process}{figure.2.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2-5}{\ignorespaces The resumed process, P1, is added to the scheduled list of process of the ProcessScheduler.}}{13}{figure.2.5}}
+\newlabel{Sema5}{{\M@TitleReference {2-5}{Understanding semaphores}}{13}{The resumed process, P1, is added to the scheduled list of process of the ProcessScheduler}{figure.2.5}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2.2}An example}{14}{section.2.2}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.3}Example: Prearmed Semaphore}{14}{section.2.3}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.4}Pharo implementation }{15}{section.2.4}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.5}wait and signal interplay}{16}{section.2.5}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}wait and signal interplay}{14}{section.2.3}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Prearmed semaphore}{15}{section.2.4}}
+\@writefile{toc}{\contentsline {subsection}{Example }{15}{section*.9}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}forMutualExclusion}{16}{section.2.5}}
+\@writefile{toc}{\contentsline {subsection}{Example.}{17}{section*.10}}
+\@writefile{toc}{\contentsline {subsection}{Deadlocking semaphores.}{17}{section*.11}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.6}Implementation }{17}{section.2.6}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.7}Conclusion}{18}{section.2.7}}
 \@writefile{lof}{\addvspace {10pt}\begingroup \dimen@  3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup }
 \@writefile{toc}{\needspace {3\baselineskip }}
 \@writefile{toc}{\contentsline {chapter}{\chapternumberline {3}Scheduler's principles}{19}{chapter.3}}
@@ -72,19 +76,21 @@
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Example}{21}{section.3.2}}
 \@writefile{lof}{\addvspace {10pt}\begingroup \dimen@  3\baselineskip \relax \vskip \z@ plus\dimen@ \penalty -100\vskip \z@ plus-\dimen@ \vskip \dimen@ \penalty 9999\vskip -\dimen@ \vskip \z@skip \endgroup }
 \@writefile{toc}{\needspace {3\baselineskip }}
-\@writefile{toc}{\contentsline {chapter}{\chapternumberline {4}Synchronisation}{23}{chapter.4}}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {4}Synchronisations}{23}{chapter.4}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.1}Motivation}{23}{section.4.1}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.2}Using a semaphore}{24}{section.4.2}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.3}Using a Mutex}{24}{section.4.3}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}Shared Queue}{25}{section.4.4}}
+\@writefile{toc}{\contentsline {subsection}{Nested critical sections.}{25}{section*.12}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}About Rendez-vous}{25}{section.4.4}}
+\@writefile{toc}{\contentsline {subsection}{Rendez-vous}{26}{section*.13}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Shared Queue}{27}{section.4.5}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Monitor}{28}{section.4.6}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}Basic usage:}{29}{section.4.7}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.8}We need one example here}{29}{section.4.8}}
 \@writefile{toc}{\needspace {3\baselineskip }}
-\@writefile{toc}{\contentsline {chapter}{\chapternumberline {5}Monitor}{27}{chapter.5}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.1}Basic usage:}{27}{section.5.1}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.2}We need one example here}{28}{section.5.2}}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {5}Mutex implementation}{31}{chapter.5}}
 \@writefile{toc}{\needspace {3\baselineskip }}
-\@writefile{toc}{\contentsline {chapter}{\chapternumberline {6}Mutex implementation}{29}{chapter.6}}
-\@writefile{toc}{\needspace {3\baselineskip }}
-\@writefile{toc}{\contentsline {chapter}{\chapternumberline {7}ShareQueue: a Semaphore Example}{31}{chapter.7}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.1}Conclusion}{32}{section.7.1}}
-\memsetcounter{lastsheet}{36}
-\memsetcounter{lastpage}{32}
+\@writefile{toc}{\contentsline {chapter}{\chapternumberline {6}ShareQueue: a Semaphore Example}{33}{chapter.6}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Conclusion}{34}{section.6.1}}
+\memsetcounter{lastsheet}{40}
+\memsetcounter{lastpage}{34}

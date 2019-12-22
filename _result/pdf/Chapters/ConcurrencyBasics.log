@@ -1,4 +1,4 @@
-This is LuaTeX, Version 1.07.0 (TeX Live 2018)  (format=lualatex 2018.5.6)  20 DEC 2019 20:40
+This is LuaTeX, Version 1.07.0 (TeX Live 2018)  (format=lualatex 2018.5.6)  22 DEC 2019 12:55
  restricted system commands enabled.
 **Chapters/ConcurrencyBasics.tex
 (./Chapters/ConcurrencyBasics.tex
@@ -34,7 +34,7 @@ Inserting `luaotfload.aux.set_capheight' at position 3 in `luaotfload.patch_font
 '.
 Inserting `luaotfload.rewrite_fontname' at position 4 in `luaotfload.patch_font'
 .
-luaotfload | main : initialization completed in 0.122 seconds
+luaotfload | main : initialization completed in 0.199 seconds
 Babel <3.18> and hyphenation patterns for 1 language(s) loaded.
 (./_support/latex/sbabook/sbabook.cls
 
@@ -1838,7 +1838,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <9> on input line 64.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 64.
-<_support/latex/sbabook/CreativeCommons-BY-SA.pdf, id=161, 120.45pt x 42.1575pt>
+<_support/latex/sbabook/CreativeCommons-BY-SA.pdf, id=197, 120.45pt x 42.1575pt>
 
 File: _support/latex/sbabook/CreativeCommons-BY-SA.pdf Graphic file (type pdf)
 <use _support/latex/sbabook/CreativeCommons-BY-SA.pdf>
@@ -1864,21 +1864,20 @@ LaTeX Font Info:    Font shape `TU/OpenSans(0)/bx/n' will be
 (Font)              scaled to size 8.31848pt on input line 2.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 2.
-)
 LaTeX Font Info:    Font shape `TU/OpenSans(0)/bx/n' will be
-(Font)              scaled to size 7.48663pt on input line 91.
+(Font)              scaled to size 7.48663pt on input line 49.
 [1
 
 
-]
+]) [2]
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.lof) [2
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.lof) [3
+
+] [4
 
 ]
 warning  (pdf backend): ignoring duplicate destination with the name 'page.1'
-[1
-
-]
+[1]
 warning  (pdf backend): ignoring duplicate destination with the name 'page.2'
 [2
 
@@ -2042,7 +2041,7 @@ LaTeX Font Info:    Font shape `TU/FiraMono(0)/m/n' will be
 ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
 currentProgramming/_result/pdf/Chapters/figures/TwoInterleavedProcesses.pdf, id=
-252, 436.63126pt x 94.3525pt>
+300, 436.63126pt x 94.3525pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/TwoInterleavedProcesses.pdf
  Graphic file (type pdf)
@@ -2054,7 +2053,7 @@ Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 leavedProcesses.pdf  used on input line 143.
 (luatex.def)             Requested size: 195.00198pt x 42.1386pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/processStates.pdf, id=254, 628.3
+currentProgramming/_result/pdf/Chapters/figures/processStates.pdf, id=302, 628.3
 475pt x 278.03876pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/processStates.pdf Graphic f
@@ -2100,7 +2099,7 @@ Overfull \hbox (57.21585pt too wide) in paragraph at lines 244--271
 
 [7]
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/SchedulerSimple.pdf, id=341, 513
+currentProgramming/_result/pdf/Chapters/figures/SchedulerSimple.pdf, id=389, 513
 .92pt x 340.27126pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/SchedulerSimple.pdf Graphic
@@ -2126,19 +2125,31 @@ oncurrentProgramming/_result/pdf/Chapters/figures/SchedulerSimple.pdf>] [9] [10
 . OpenSans scale = 0.8485397528283549.
 .................................................
 
-Overfull \hbox (7.70996pt too wide) in paragraph at lines 331--333
+Overfull \hbox (6.6211pt too wide) in paragraph at lines 329--332
+\TU/GentiumBasic(0)/m/n/10 pro-poses dif-fer-ent syn-chro-niza-tion chal-lenges
+ that are solves with Semapharo: 
+ []
+
+
+Overfull \hbox (7.70996pt too wide) in paragraph at lines 333--335
 \TU/GentiumBasic(0)/m/n/10 A Semaphore is an ob-ject used to syn-chro-nize mul-
 ti-ple pro-cesses. A semaphore 
  []
 
 [11]
-Overfull \hbox (22.07031pt too wide) in paragraph at lines 345--346
+Overfull \hbox (6.71875pt too wide) in paragraph at lines 346--347
+\TU/GentiumBasic(0)/m/n/10 cesses P1, P2, P3 are wait-ing for the re-sources (F
+ig. []2-1[]). They are queued 
+ []
+
+
+Overfull \hbox (22.07031pt too wide) in paragraph at lines 347--348
 []\TU/GentiumBasic(0)/m/n/10 The pro-cess P4 wants to ac-cess the re-sources: i
 t sends wait to the semaphore 
  []
 
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores1.pdf, id=386, 419.567
+currentProgramming/_result/pdf/Chapters/figures/Semaphores1.pdf, id=433, 419.567
 5pt x 169.63374pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores1.pdf Graphic fil
@@ -2147,10 +2158,10 @@ e (type pdf)
 -ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores1.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es1.pdf  used on input line 356.
+es1.pdf  used on input line 358.
 (luatex.def)             Requested size: 195.00198pt x 78.84004pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores2.pdf, id=387, 419.567
+currentProgramming/_result/pdf/Chapters/figures/Semaphores2.pdf, id=434, 419.567
 5pt x 193.72375pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores2.pdf Graphic fil
@@ -2159,10 +2170,10 @@ e (type pdf)
 -ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores2.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es2.pdf  used on input line 364.
+es2.pdf  used on input line 366.
 (luatex.def)             Requested size: 195.00198pt x 90.03625pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores3.pdf, id=388, 419.567
+currentProgramming/_result/pdf/Chapters/figures/Semaphores3.pdf, id=435, 419.567
 5pt x 169.63374pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores3.pdf Graphic fil
@@ -2171,10 +2182,10 @@ e (type pdf)
 -ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores3.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es3.pdf  used on input line 372.
+es3.pdf  used on input line 374.
 (luatex.def)             Requested size: 195.00198pt x 78.84004pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf, id=389, 388.451
+currentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf, id=436, 388.451
 25pt x 169.63374pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf Graphic fil
@@ -2183,10 +2194,10 @@ e (type pdf)
 -ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es4.pdf  used on input line 380.
+es4.pdf  used on input line 382.
 (luatex.def)             Requested size: 195.00198pt x 85.15833pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf, id=390, 380.421
+currentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf, id=437, 380.421
 25pt x 203.76125pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf Graphic fil
@@ -2195,36 +2206,22 @@ e (type pdf)
 -ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es5.pdf  used on input line 388.
+es5.pdf  used on input line 390.
 (luatex.def)             Requested size: 195.00198pt x 104.44852pt.
-</Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
-currentProgramming/_result/pdf/Chapters/figures/Semaphores6.pdf, id=391, 419.567
-5pt x 169.63374pt>
-File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
-t-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores6.pdf Graphic fil
-e (type pdf)
-<use /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet
--ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores6.pdf>
-Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
-/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
-es6.pdf  used on input line 396.
-(luatex.def)             Requested size: 195.00198pt x 78.84004pt.
 [12</Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-
 ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores1.pdf></Users/ducas
 se/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgra
-mming/_result/pdf/Chapters/figures/Semaphores2.pdf></Users/ducasse/Workspace/Fir
-stCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pd
-f/Chapters/figures/Semaphores3.pdf>]
+mming/_result/pdf/Chapters/figures/Semaphores2.pdf>] [13</Users/ducasse/Workspac
+e/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_resu
+lt/pdf/Chapters/figures/Semaphores3.pdf></Users/ducasse/Workspace/FirstCircle/My
+Books/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/
+figures/Semaphores4.pdf></Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
+/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphor
+es5.pdf>]
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [13</Users/d
-ucasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentPr
-ogramming/_result/pdf/Chapters/figures/Semaphores4.pdf></Users/ducasse/Workspace
-/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_resul
-t/pdf/Chapters/figures/Semaphores5.pdf></Users/ducasse/Workspace/FirstCircle/MyB
-ooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/f
-igures/Semaphores6.pdf>]
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
@@ -2236,10 +2233,6 @@ ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [14]
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
-\openout5 = ConcurrencyBasics.listing
-
-(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
 ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [15]
 \openout5 = ConcurrencyBasics.listing
 
@@ -2248,10 +2241,33 @@ ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [16] [17] [
-18
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
 
-]
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [16]
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+Overfull \hbox (5.43457pt too wide) in paragraph at lines 539--540
+\TU/GentiumBasic(0)/m/n/10 Pay at-ten-tion that a semaphore crit-i-cal sec-tion
+ can-not be nested. A semaphore 
+ []
+
+
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [17] [18]
 .................................................
 . fontspec info: "set-scale"
 . 
@@ -2264,7 +2280,7 @@ ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [16] [17] [
 .................................................
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
 currentProgramming/_result/pdf/Chapters/figures/ProcessorStateSchedulerSemaphore
-.pdf, id=611, 623.32875pt x 507.8975pt>
+.pdf, id=653, 623.32875pt x 507.8975pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateSchedulerSema
 phore.pdf Graphic file (type pdf)
@@ -2273,11 +2289,11 @@ phore.pdf Graphic file (type pdf)
 hore.pdf>
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Processo
-rStateSchedulerSemaphore.pdf  used on input line 554.
+rStateSchedulerSemaphore.pdf  used on input line 599.
 (luatex.def)             Requested size: 325.0pt x 264.81346pt.
 </Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Con
 currentProgramming/_result/pdf/Chapters/figures/ProcessorStateScheduler.pdf, id=
-613, 773.89125pt x 282.05376pt>
+655, 773.89125pt x 282.05376pt>
 File: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
 t-ConcurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateScheduler.pdf
  Graphic file (type pdf)
@@ -2286,17 +2302,19 @@ t-ConcurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateScheduler.pdf
 
 Package luatex.def Info: /Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing
 /PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Processo
-rStateScheduler.pdf  used on input line 572.
+rStateScheduler.pdf  used on input line 617.
 (luatex.def)             Requested size: 325.0pt x 118.44885pt.
 
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [19] [20</Us
-ers/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Concurr
-entProgramming/_result/pdf/Chapters/figures/ProcessorStateSchedulerSemaphore.pdf
-></Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateScheduler.pdf>]
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [19
+
+] [20</Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Bookle
+t-ConcurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateSchedulerSema
+phore.pdf></Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/B
+ooklet-ConcurrentProgramming/_result/pdf/Chapters/figures/ProcessorStateSchedule
+r.pdf>]
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
@@ -2321,41 +2339,74 @@ ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
 ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [24]
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
 ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+Overfull \hbox (13.58887pt too wide) in paragraph at lines 758--760
+\TU/GentiumBasic(0)/m/n/10 In ad-di-tion a Mu-tex is also more ro-bust to neste
+d crit-i-cal calls than a semaphore. 
+ []
+
+
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [25] [26
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
 
-]
-.................................................
-. fontspec info: "set-scale"
-. 
-. OpenSans scale = 0.8485398099545182.
-.................................................
-.................................................
-. fontspec info: "set-scale"
-. 
-. OpenSans scale = 0.8485397528283549.
-.................................................
-[27] [28]
-.................................................
-. fontspec info: "set-scale"
-. 
-. OpenSans scale = 0.8485398099545182.
-.................................................
-.................................................
-. fontspec info: "set-scale"
-. 
-. OpenSans scale = 0.8485397528283549.
-.................................................
-[29
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [25]
+\openout5 = ConcurrencyBasics.listing
 
-] [30
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [26]
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [27]
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [28] [29] [
+30
 
 ]
 .................................................
@@ -2380,38 +2431,63 @@ ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [31]
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [31] [32
+
+]
+.................................................
+. fontspec info: "set-scale"
+. 
+. OpenSans scale = 0.8485398099545182.
+.................................................
+.................................................
+. fontspec info: "set-scale"
+. 
+. OpenSans scale = 0.8485397528283549.
+.................................................
+
 \openout5 = ConcurrencyBasics.listing
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
-ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [32]
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing)
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [33]
+\openout5 = ConcurrencyBasics.listing
+
+(/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
+ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.listing) [34]
 \tf@toc=\write8
 
 \openout8 = ConcurrencyBasics.toc
 \tf@lof=\write9
 
 \openout9 = ConcurrencyBasics.lof
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 825.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 825.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1046.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1046.
 
 (/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-Co
 ncurrentProgramming/_result/pdf/Chapters/ConcurrencyBasics.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 825.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 825.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1046.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1046.
 Package rerunfilecheck Info: File `ConcurrencyBasics.out' has not changed.
-(rerunfilecheck)             Checksum: 656F8E31B18FAB1087BDA7441DB08A82;5362.
+(rerunfilecheck)             Checksum: F0847A984F304F0CF432E9236F66C1DD;6460.
 )
 
 Here is how much of LuaTeX's memory you used:
- 39649 strings out of 494413
+ 40058 strings out of 494413
  100000,1144653 words of node,token memory allocated
- 1491 words of node memory still in use:
-   7 hlist, 5 vlist, 1 rule, 10 glue, 7 glyph, 25 attribute, 209 glue_spec, 25 a
-ttribute_list, 3 write, 4 pdf_literal, 4 pdf_action nodes
-   avail lists: 1:2,2:2095,3:299,4:40,5:1078,6:61,7:3467,8:643,9:1907,10:21,11:2
-31
- 41893 multiletter control sequences out of 65536+600000
- 99 fonts using 14715559 bytes
+ 1500 words of node memory still in use:
+   7 hlist, 5 vlist, 1 rule, 10 glue, 6 glyph, 26 attribute, 209 glue_spec, 26 a
+ttribute_list, 3 write, 4 pdf_literal, 6 pdf_action nodes
+   avail lists: 1:2,2:3636,3:431,4:37,5:1716,6:61,7:4224,8:1008,9:3144,10:21,11:
+300
+ 41965 multiletter control sequences out of 65536+600000
+ 99 fonts using 14714311 bytes
  67i,13n,122p,850b,1055s stack positions out of 5000i,500n,10000p,200000b,100000s
 </usr/local/texlive/2018/texmf-dist/fonts/truetype/public/gentium-tug/GenBkBasI.
 ttf></usr/local/texlive/2018/texmf-dist/fonts/truetype/public/opensans/OpenSans-
@@ -2420,9 +2496,9 @@ Bold.ttf></usr/local/texlive/2018/texmf-dist/fonts/opentype/public/fira/FiraMono
 ug/GenBkBasB.ttf></usr/local/texlive/2018/texmf-dist/fonts/truetype/public/genti
 um-tug/GenBkBasR.ttf></usr/local/texlive/2018/texmf-dist/fonts/truetype/public/o
 pensans/OpenSans-Regular.ttf>
-Output written on ConcurrencyBasics.pdf (36 pages, 531569 bytes).
+Output written on ConcurrencyBasics.pdf (40 pages, 545238 bytes).
 
-PDF statistics: 842 PDF objects out of 1000 (max. 8388607)
- 294 named destinations out of 1000 (max. 131072)
- 356 words of extra memory for PDF output out of 10000 (max. 100000000)
+PDF statistics: 1002 PDF objects out of 1200 (max. 8388607)
+ 425 named destinations out of 1000 (max. 131072)
+ 428 words of extra memory for PDF output out of 10000 (max. 100000000)
 

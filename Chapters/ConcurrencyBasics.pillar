@@ -480,7 +480,7 @@ Semaphore >> wait
 !!! Conclusion
 
 Semaphores are the lower synchronisation mechanisms. 
-Pharo offers other abstractions to synchronize. 
+Pharo offers other abstractions to synchronize such as Mutexes (also named recursion lock), Monitors, shared queue, ...
 
 
 
@@ -488,18 +488,20 @@ Pharo offers other abstractions to synchronize.
 
 !! Scheduler's principles
 
+In this chapter we revisit the way to scheduler works.
+In particular we show how delay is used and implemented.
 
-Un processus signifie à un sémaphore qu’il libère la ressource en lui envoyant le message signal. 
-Le sémaphore envoie alors un message resume au premier processus en attente de sa file d’attente, 
-ce qui rend ce dernier activable, c’est-à-dire qu’il est ajouté dans la file d’attente du 
-ProcessorScheduler correspondant à sa priorité (voir figure 9-2 ci-après).
+!!! Revisiting Process states
 
-
-
-
+A process (thread) notifies a semaphore that it frees a resources by sending the message ==signal==. 
+The first waiting process is resumed and added to the list of Processor waiting list. 
 
 
-+BBB>file://figures/ProcessorStateSchedulerSemaphore.pdf|label=ProcessorStateSchedulerSemaphore+
+
+
+
+
++Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 
 Now we can revisit the different states of a process by looking its interaction with the process scheduler and 
@@ -509,9 +511,6 @@ semaphores as shown in *@ProcessorStateScheduler*.
 - activable: it is one of the waiting queue of the scheduler.
 - waiting: it is suspendedn on a semaphore. It is the waiting list of a semaphore and it is not yet activable.
 - suspended: if this is the active process it is interrupted and can be reactivated later, else it is removed from the queue of the activable process that it belongs to. 
-
-
-+Revisiting the process states>file://figures/ProcessorStateScheduler.pdf|label=ProcessorStateScheduler+
 
 
 
@@ -561,7 +560,7 @@ betweenPong := Delay forMilliseconds: 100.
 
 
 
-
+!!! Yield
 
 
 

@@ -1,5 +1,5 @@
 \changetocdepth {1}
-\contentsline {chapter}{Illustrations}{ii}{section*.1}
+\contentsline {chapter}{Illustrations}{iii}{section*.1}
 \needspace {3\baselineskip }
 \contentsline {chapter}{\chapternumberline {1}Concurrent Programming in Pharo}{3}{chapter.1}
 \contentsline {section}{\numberline {1.1}Studying an example}{3}{section.1.1}
@@ -18,26 +18,34 @@
 \needspace {3\baselineskip }
 \contentsline {chapter}{\chapternumberline {2}Semaphores}{11}{chapter.2}
 \contentsline {section}{\numberline {2.1}Understanding semaphores}{11}{section.2.1}
+\contentsline {subsection}{Details }{12}{section*.8}
 \contentsline {section}{\numberline {2.2}An example}{14}{section.2.2}
-\contentsline {section}{\numberline {2.3}Example: Prearmed Semaphore}{14}{section.2.3}
-\contentsline {section}{\numberline {2.4}Pharo implementation }{15}{section.2.4}
-\contentsline {section}{\numberline {2.5}wait and signal interplay}{16}{section.2.5}
+\contentsline {section}{\numberline {2.3}wait and signal interplay}{14}{section.2.3}
+\contentsline {section}{\numberline {2.4}Prearmed semaphore}{15}{section.2.4}
+\contentsline {subsection}{Example }{15}{section*.9}
+\contentsline {section}{\numberline {2.5}forMutualExclusion}{16}{section.2.5}
+\contentsline {subsection}{Example.}{17}{section*.10}
+\contentsline {subsection}{Deadlocking semaphores.}{17}{section*.11}
+\contentsline {section}{\numberline {2.6}Implementation }{17}{section.2.6}
+\contentsline {section}{\numberline {2.7}Conclusion}{18}{section.2.7}
 \needspace {3\baselineskip }
 \contentsline {chapter}{\chapternumberline {3}Scheduler's principles}{19}{chapter.3}
 \contentsline {section}{\numberline {3.1}Delay}{19}{section.3.1}
 \contentsline {section}{\numberline {3.2}Example}{21}{section.3.2}
 \needspace {3\baselineskip }
-\contentsline {chapter}{\chapternumberline {4}Synchronisation}{23}{chapter.4}
+\contentsline {chapter}{\chapternumberline {4}Synchronisations}{23}{chapter.4}
 \contentsline {section}{\numberline {4.1}Motivation}{23}{section.4.1}
 \contentsline {section}{\numberline {4.2}Using a semaphore}{24}{section.4.2}
 \contentsline {section}{\numberline {4.3}Using a Mutex}{24}{section.4.3}
-\contentsline {section}{\numberline {4.4}Shared Queue}{25}{section.4.4}
+\contentsline {subsection}{Nested critical sections.}{25}{section*.12}
+\contentsline {section}{\numberline {4.4}About Rendez-vous}{25}{section.4.4}
+\contentsline {subsection}{Rendez-vous}{26}{section*.13}
+\contentsline {section}{\numberline {4.5}Shared Queue}{27}{section.4.5}
+\contentsline {section}{\numberline {4.6}Monitor}{28}{section.4.6}
+\contentsline {section}{\numberline {4.7}Basic usage:}{29}{section.4.7}
+\contentsline {section}{\numberline {4.8}We need one example here}{29}{section.4.8}
 \needspace {3\baselineskip }
-\contentsline {chapter}{\chapternumberline {5}Monitor}{27}{chapter.5}
-\contentsline {section}{\numberline {5.1}Basic usage:}{27}{section.5.1}
-\contentsline {section}{\numberline {5.2}We need one example here}{28}{section.5.2}
+\contentsline {chapter}{\chapternumberline {5}Mutex implementation}{31}{chapter.5}
 \needspace {3\baselineskip }
-\contentsline {chapter}{\chapternumberline {6}Mutex implementation}{29}{chapter.6}
-\needspace {3\baselineskip }
-\contentsline {chapter}{\chapternumberline {7}ShareQueue: a Semaphore Example}{31}{chapter.7}
-\contentsline {section}{\numberline {7.1}Conclusion}{32}{section.7.1}
+\contentsline {chapter}{\chapternumberline {6}ShareQueue: a Semaphore Example}{33}{chapter.6}
+\contentsline {section}{\numberline {6.1}Conclusion}{34}{section.6.1}

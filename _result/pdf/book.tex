@@ -201,7 +201,7 @@ You can also pass arguments to a process with the message \textcode{newProcessWi
 | pr |
 pr := [ :max |
   1 to: max do: [ :i |
-    i  printString crLog ] ] newProcessWith: #(20).
+    i  printString crTrace ] ] newProcessWith: #(20).
 pr resume
 \end{displaycode}
 
@@ -235,7 +235,7 @@ To get the running process, you can execute: \textcode{Processor activeProcess}.
 At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with \textcode{priority:} message, or \textcode{forkAt:} message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to \textcode{Processor}. For example, the following snippet is run at the same priority that background user tasks.
 
 \begin{displaycode}{plain}
-[ 1 to: 10 do: [ :i | i  printString crLog ]
+[ 1 to: 10 do: [ :i | i  printString crTrace ]
 	] forkAt: Processor userBackgroundPriority
 \end{displaycode}
 
@@ -326,27 +326,29 @@ Now since multiple people can wait for the pen, the waiters are ordered in a wai
 When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
 Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
 
-In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself.
+In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
+A great book proposes different synchronization challenges that are solves with Semapharo: The Little Book of Semaphores.
+It is clearly a nice further readings. 
 \section{Understanding semaphores}
 A Semaphore is an object used to synchronize multiple processes.
 A semaphore is often used to make sure that a resource is only be accessed by a single process at the time.
 
-A process that wants to access to a resource will declare to the semaphore protecting the resource by sending
+A process that wants to access to a resources will declare to the semaphore protecting the resources by sending
 to the semaphore the message \textcode{wait}. 
 The semaphore will add this process to its waiting list. 
 A semaphore keeps a list of waiting processes that want to access to the resource protected by the semaphore.
-When the process currently using the resource does not use it anymore, it signals it to the semaphore sending the message \textcode{signal}. 
+When the process currently using the resources does not use it anymore, it signals it to the semaphore sending the message \textcode{signal}. 
 The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
 
-Here are the steps:
+Here are the steps illustrating a typical scenario illustrated by the following diagram.
 
 \begin{enumerate}
-\item The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources (Fig. \ref{Sema1}).
+\item The semaphore protects a resources: P0 is using the resources. Processes P1, P2, P3 are waiting for the resources (Fig. \ref{Sema1}). They are queued in the semaphore waiting list.
 \item The process P4 wants to access the resources: it sends wait to the semaphore (Fig. \ref{Sema2}).
 \item P4 is added to the waiting list (Fig. \ref{Sema3}).
-\item P0 has finished to use the resources: it signals it to the semaphore  (Fig. \ref{Sema4})..
-\item The semaphore resumes the first waiting process (P1) (Fig. \ref{Sema5}).
-\item The resumed process is now scheduled by the scheduler  (Fig. \ref{Sema6}).
+\item P0 has finished to use the resources: it signals it to the semaphore (Fig. \ref{Sema4}).
+\item The semaphore resumes the first waiting process, here P1 (Fig. \ref{Sema5}).
+\item The resumed process, P1, will be scheduled by the scheduler.
 \end{enumerate}
 
 
@@ -377,7 +379,7 @@ Here are the steps:
 \begin{figure}
 
 \begin{center}
-\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf}\caption{P0 has finished to use the resources: it signals it to the semaphore.\label{Sema4}}\end{center}
+\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores4.pdf}\caption{P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process. \label{Sema4}}\end{center}
 \end{figure}
 
 
@@ -385,27 +387,18 @@ Here are the steps:
 \begin{figure}
 
 \begin{center}
-\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf}\caption{The semaphore resumes the first waiting process (P1).\label{Sema5}}\end{center}
+\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores5.pdf}\caption{The resumed process, P1,  is added to the scheduled list of process of the ProcessScheduler.\label{Sema5}}\end{center}
 \end{figure}
 
-
-
-\begin{figure}
-
-\begin{center}
-\includegraphics[width=0.6\textwidth]{/Users/ducasse/Workspace/FirstCircle/MyBooks/Bk-Writing/PharoBooks2/Booklet-ConcurrentProgramming/_result/pdf/Chapters/figures/Semaphores6.pdf}\caption{The resumed process is now scheduled by the scheduler.\label{Sema6}}\end{center}
-\end{figure}
-
-
+\subsection{Details }
 A semaphore will only release as many processes from \textcode{wait} messages as it has received signal messages.
 When a semaphore receives a \textcode{wait} message for which no corresponding \textcode{signal} has been sent, the process sending the \textcode{wait} is suspended.
 Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
 
-Unlike the \textcode{ProcessorScheduler}, a semaphore does not pay attention to the priority of a
-\textcode{Process}, it dequeues processes in the order in which they waited on the semaphore.
-
+Unlike the \textcode{ProcessorScheduler}, a semaphore does not pay attention to the priority of a process, it dequeues processes in the order in which they waited on the semaphore.
 The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
 \section{An example}
+Before continuing let us play with semaphores.
 Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
 \begin{displaycode}{plain}
@@ -413,15 +406,15 @@ Open a transcript and inspect the following piece of code: It schedules two proc
 semaphore := Semaphore new.
 
 [ "Do a first job ..."
-	'Job1 started' crLog.
+	'Job1 started' crTrace.
 	semaphore wait. 
-	'Job1 finished' crLog
+	'Job1 finished' crTrace
 	] fork.
 
 [ "Do a second job ..."
-	'Job2 started' crLog.
+	'Job2 started' crTrace.
 	semaphore wait. 
-	'Job2 finished' crLog
+	'Job2 finished' crTrace
 	] fork.
 semaphore inspect
 \end{displaycode}
@@ -437,9 +430,50 @@ What you see is that the two processes stopped. They did not finish their job.
 When a semaphore receives a \textcode{wait} message, it will stop the process sending the message and add the process to its pending list. 
 
 Now in the inspector on the semaphore execute \textcode{self signal}.
-This will have as effect to schedule one of the waiting process and one of the job will finish its task.
-\section{Example: Prearmed Semaphore}
-Let us modify slightly the previous example. 
+This schedules one of the waiting process and one of the job will finish its task.
+If we do not send a new signal message to the semaphore, the second waiting process will never be scheduled.
+\section{wait and signal interplay}
+The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
+
+\begin{displaycode}{plain}
+| semaphore |
+semaphore := Semaphore new. 
+[ 'Pharo ' crTrace ] fork. 
+
+['is ' crTrace .
+semaphore wait.
+'super ' crTrace. 
+semaphore signal] fork.
+
+['really ' crTrace. 
+semaphore signal.
+semaphore wait.
+'cool!' crTrace ] fork
+\end{displaycode}
+
+You should obtain \textcode{Pharo is really super cool!}
+
+Let us describe what is happening. 
+
+\begin{itemize}
+\item The first one prints \textcode{'Pharo'}. 
+\item The second one prints \textcode{'is '} and waits.
+\item The third one prints \textcode{'really '} and signal the semaphore and waits. It is added to the waiting list after the second process.
+\item Since the third process signaled the semaphore, the first waiting process (the second one) is scheduled and prints \textcode{'super '} and signals the semaphore. 
+\item The third process is scheduled and prints: \textcode{'cool!'}
+\end{itemize}
+\section{Prearmed semaphore}
+A process wanted a resource protected by a semaphore does not have to be systematically put on the waiting list.
+There are situations where if it would be the case, the system would be blocked forever because no process could signal
+the semaphore: an no pending process would be resumed. 
+
+A semaphore can be rearmed: it can be signalled (receives \textcode{signal} messages) before receiving \textcode{wait} messages. 
+In such a case, a process requesting to access the resources will just proceed and be scheduled without first being queued to the waiting list.
+
+A semaphore holds a counter of signals that it receives but did not lead to a process execution.
+It will not block the process sending a \textcode{wait} message if it has got  \textcode{signal} messages that did not led to scheduling a waiting process.
+\subsection{Example }
+Let us modify slightly the previous example.
 We send a \textcode{signal} message to the semaphore prior to creating the processes.
 
 \begin{displaycode}{plain}
@@ -447,17 +481,17 @@ We send a \textcode{signal} message to the semaphore prior to creating the proce
 semaphore := Semaphore new.
 semaphore signal. 
 [ "Do a first job ..."
-	'Job1 started' crLog.
+	'Job1 started' crTrace.
 	semaphore wait. 
-	'Job1 finished' crLog
+	'Job1 finished' crTrace
 	] fork.
 
 [ "Do a second job ..."
-	'Job2 started' crLog.
+	'Job2 started' crTrace.
 	semaphore wait. 
-	'Job2 finished' crLog
+	'Job2 finished' crTrace
 	] fork.
-semaphore
+semaphore inspect
 \end{displaycode}
 
 What you see here is that one of the waiting process is proceed.
@@ -468,18 +502,55 @@ What you see here is that one of the waiting process is proceed.
 'Job2 started'
 \end{displaycode}
 
-This example illustrates that a semaphore a \textcode{signal} does not have to be done after a \textcode{wait}.
-This is important to make sure that one certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another one. 
+This example illustrates that signalling a semaphore does not have to be done after a \textcode{wait}.
 
-A semaphore holds a counter of signals that it receives but did not lead to a process execution, and it will not block the process sending a \textcode{wait} message if it has got  \textcode{signal} messages that did not led to scheduling a waiting process.
-\section{Pharo implementation }
+This is important to make sure that on certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule another ones. 
+
+We can ask a semaphore whether if it is prearmed using the message \textcode{isSignaled}. 
+
+\begin{displaycode}{plain}
+sema := Semapharo new.
+sema signal.
+sema isSignaled
+>>> true
+\end{displaycode}
+\section{forMutualExclusion}
+Sometimes we need to ensure that a section of code is only executed when no other process is executing it. 
+We want to make sure that only one process at a time executes the code. 
+This is call a critical section. 
+
+For this the class \textcode{Semaphore} offers the message \textcode{critical: aBlock}.
+It evaluates aBlock only if the receiver is not currently in the process of running the \textcode{critical:} message. 
+If the receiver is, evaluate aBlock after the other \textcode{critical:} message is finished.
+To use a critical, first the semaphore should be prearmed using the class creation message \textcode{forMutualExclusion}
+\subsection{Example.}
+\begin{displaycode}{plain}
+	Here I need a simple race condition 
+\end{displaycode}
+
+ 
+
+\begin{displaycode}{plain}
+	Here I need a simple mutual exclusion
+\end{displaycode}
+
+ 
+\subsection{Deadlocking semaphores.}
+Pay attention that a semaphore critical section cannot be nested. A semaphore gets blocked (waiting) when being called from a critical section its protects. 
+
+\begin{displaycode}{plain}
+| deadlockSem |
+deadlockSem := Semaphore new. 
+deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
+\end{displaycode}
+\section{Implementation }
 A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a \textcode{wait} message is not blocking and the process can continue its operations. 
+On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed.
 
-If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a \textcode{wait} message is not blocking and the process can continue its operations. On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed. 
+Here is the implementation of \textcode{signal} and \textcode{wait} in Pharo.
 
-Here is the implemntation of \textcode{signal} and \textcode{wait} in Pharo.
-
-The signal message comment shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+The \textcode{signal} method shows that If there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
 
 \begin{displaycode}{plain}
 Semaphore >> signal
@@ -495,7 +566,7 @@ Semaphore >> signal
 		ifFalse: [Processor resume: self removeFirstLink]"
 \end{displaycode}
 
-The description of the wait primitive shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
+The \textcode{wait} method shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
 On the contrary, when there is no signals on excess, then the process is suspended.
 
 \begin{displaycode}{plain}
@@ -508,40 +579,14 @@ Semaphore >> wait
 	self primitiveFailed
 
 	"excessSignals>0  
-		ifTrue: [excessSignals := excessSignals-1]  
+		ifTrue: [excessSignals := excessSignals - 1]  
 		ifFalse: [self addLastLink: Processor activeProcess suspend]"
 \end{displaycode}
-\section{wait and signal interplay}
-The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
-
-\begin{displaycode}{plain}
-| semaphore |
-semaphore := Semaphore new. 
-[ 'Pharo ' crLog ] fork. 
-
-['is ' crLog .
-semaphore wait.
-'super ' crLog. 
-semaphore signal] fork.
-
-['really ' crLog. 
-semaphore signal.
-semaphore wait.
-'cool!' crLog ] fork
-\end{displaycode}
-
-You should obtain \textcode{Pharo is really super cool!}
-
-Let us describe what is happening. 
-
-\begin{itemize}
-\item The first one prints \textcode{'Pharo'}. 
-\item The second one prints \textcode{'is '} and waits.
-\item The third one prints \textcode{'really '} and signal the semaphore and waits. It is added to the waiting list after the second process.
-\item Since the third process signaled the semaphore, the first waiting process (the second one) is scheduled and prints \textcode{'super '} and signals the semaphore. 
-\item The third process is scheduled and prints: \textcode{'cool!'}
-\end{itemize}
+\section{Conclusion}
+Semaphores are the lower synchronisation mechanisms. 
+Pharo offers other abstractions to synchronize such as Mutexes (also named recursion lock), Monitors, shared queue, ...
 \chapter{Scheduler's principles}
+A process (thread) notifies a semaphore that it frees a reoor
 Un processus signifie \`{a} un s\'{e}maphore qu’il lib\`{e}re la ressource en lui envoyant le message signal. 
 Le s\'{e}maphore envoie alors un message resume au premier processus en attente de sa file d’attente, 
 ce qui rend ce dernier activable, c’est-\`{a}-dire qu’il est ajout\'{e} dans la file d’attente du 
@@ -603,7 +648,7 @@ Typical needs for delas are
 | betweenPing |  
 betweenPing := Delay forMilliseconds: 300.
 10 timesRepeat: [ 
-   'ping' crLog. 
+   'ping' crTrace. 
    betweenPing wait] 
    ] forkAt: Processor userBackgroundPriority.
 	  
@@ -611,11 +656,11 @@ betweenPing := Delay forMilliseconds: 300.
 | betweenPong |  
 betweenPong := Delay forMilliseconds: 100.
 10 timesRepeat: [ 
-   'PONG' crLog. 
+   'PONG' crTrace. 
    betweenPong wait]
    ] forkAt: Processor userBackgroundPriority.
 \end{displaycode}
-\chapter{Synchronisation}
+\chapter{Synchronisations}
 When multiple threads share and modify the same resources we can easily end up in 
 broken state. 
 \section{Motivation}
@@ -641,27 +686,34 @@ The solution is to make sure that a thread cannot access a resources while anoth
 
 When several access a shared resources, only one gets the resources, the other threads got suspended, waiting for the first thread to have finished and release the resources.
 \section{Using a semaphore}
-We can use a semaphore to control the execution of several threads. 
+As we already saw, we can use a semaphore to control the execution of several threads. 
 
 Here we want to make sure that we can do 10 debit and 10 deposit of the same amount and that we get the same amount at the end. 
 
 \begin{displaycode}{plain}
-|lock account|
+| lock counter |
 lock := Semaphore new.
-account := 3000.
+counter := 3000.
 [ 10 timesRepeat: [
 	lock wait.
 	counter := counter + 100.
-	compter crLog.
+	counter crTrace.
 	lock signal ]
 	] fork.
 	
 [ 10 timesRepeat: [
 	counter := counter - 100.
-	counter crLog. 
+	counter crTrace. 
 	lock signal. 
 	lock wait ]
 	] fork
+\end{displaycode}
+
+\begin{displaycode}{plain}
+2900
+3000
+2900
+3000
 \end{displaycode}
 
 Notice the pattern, the thread are not symmetrical. 
@@ -672,23 +724,160 @@ The second one will work and signal and wait to perform the next iteration.
 The same problem can be solved in a more robust wait using Mutex and critical sections
 as we see present in the following section.
 \section{Using a Mutex}
-A Mutex is an object to protect a share resources. An instance of the class \textcode{Mutex} will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message \textcode{critical:}.
+A Mutex (MUTual EXclusion) is an object to protect a share resources. 
+A mutex can be used when two or more processes need to access a shared resource concurrently. 
+A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use. Waiting processes are granted access to the mutex in the order the access was requested.
+An instance of the class \textcode{Mutex} will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message \textcode{critical:}.
 
 In the following example the expressions \textcode{Processor yield} ensures that thread of the same priority can get a chance to be executed. 
 
 \begin{displaycode}{plain}
-|lock account|
+| lock counter |
 lock := Mutex new.
-account := 3000.
-[10 timesRepeat: [ Processor yield.
-	lock critical: [ account := counter + 100.
-					account crLog ] ]
+counter := 3000.
+[10 timesRepeat: [ 
+	Processor yield.
+	lock critical: [ counter := counter + 100.
+						counter crTrace ] ]
 	] fork.
 
-[10 timesRepeat: [ Processor yield.
-	lock critical: [ account := counter - 100.
-					account crLog ] ]
+[10 timesRepeat: [ 
+	Processor yield.
+	lock critical: [ counter := counter - 100.
+					counter crTrace ] ]
 	] fork
+\end{displaycode}
+
+\begin{displaycode}{plain}
+3100
+3000
+3100
+3000
+\end{displaycode}
+\subsection{Nested critical sections.}
+In addition a Mutex is also more robust  to nested critical calls than a semaphore.
+For example the following snippet will not deadlock, while a semaphore will. This is why a mutex is also called a recursionLock.
+
+\begin{displaycode}{plain}
+|mutex|
+mutex := Mutex new. 
+mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
+\end{displaycode}
+
+The same code gets blocked on a deadlock with a semaphore.
+\section{About Rendez-vous}
+As we saw, using \textcode{wait} and \textcode{signal} we can  make sure that two programs running in separate threads can be executed one after the other in order.
+
+The following example is freely inspired from \symbol{34}The little book of semaphores book.
+Imagine that we want to have one process reading from file and another process displaying the read contents. 
+Obviously we would like to ensure that the reading happens before the display. 
+We can enforce such order by using \textcode{signal} and \textcode{wait} as following
+
+\begin{displaycode}{plain}
+| readingIsDone read file |
+file := FileSystem workingDirectory / 'oneLineBuffer'.
+file writeStreamDo: [ :s| s << 'Pharo is cool' ; cr ].
+readingIsDone := Semaphore new. 
+[
+'Reading line' crTrace.
+read := file readStream upTo: Character cr.
+readingIsDone signal.
+] fork.
+[ 
+readingIsDone wait.	
+'Displaying line' crTrace.
+read crTrace.
+] fork.
+\end{displaycode}
+
+Here is the output
+
+\begin{displaycode}{plain}
+'Reading line'
+'Displaying line'
+'Pharo is cool'
+\end{displaycode}
+\subsection{Rendez-vous}
+Now a question is how can be generalize such a behavior so that we can have two programs that work freely to a point 
+where a part of the other has been performed. 
+ 
+For example imagine that we have two prisoners that to escape have to pass a barrier together (their order is irrelevant but they should do it consecutively) and that before that they have to run to the barrier. 
+
+The following output is not permitted. 
+
+\begin{displaycode}{plain}
+'a running to the barrier'
+'a jumping over the barrier'
+'b running to the barrier'
+'b jumping over the barrier'
+\end{displaycode}
+
+\begin{displaycode}{plain}
+'b running to the barrier'
+'b jumping over the barrier'
+'a running to the barrier'
+'a jumping over the barrier'
+\end{displaycode}
+
+The following cases are permitted. 
+
+\begin{displaycode}{plain}
+'a running to the barrier'
+'b running to the barrier'
+'b jumping over the barrier'
+'a jumping over the barrier'
+\end{displaycode}
+
+\begin{displaycode}{plain}
+'a running to the barrier'
+'b running to the barrier'
+'a jumping over the barrier'
+'b jumping over the barrier'
+\end{displaycode}
+
+\begin{displaycode}{plain}
+'b running to the barrier'	
+'a running to the barrier'
+'b jumping over the barrier'
+'a jumping over the barrier'
+\end{displaycode}
+
+\begin{displaycode}{plain}
+'b running to the barrier'	
+'a running to the barrier'
+'a jumping over the barrier'
+'b jumping over the barrier'
+\end{displaycode}
+
+Here is a code without any synchronisation. We randomly shuffle an array with two blocks and execute them. 
+It produces the non permitted output. 
+
+\begin{displaycode}{plain}
+{  
+['a running to the barrier' crTrace.
+'a jumping over the barrier' crTrace ] 
+.
+[ 'b running to the barrier' crTrace.
+'b jumping over the barrier' crTrace ] 
+} shuffled do: [ :each | each fork ]
+\end{displaycode}
+
+Here is a possible solution using two semaphores. 
+
+\begin{displaycode}{plain}
+| aAtBarrier bAtBarrier |
+aAtBarrier := Semaphore new.
+bAtBarrier := Semaphore new.
+{[ 'a running to the barrier' crTrace.
+aAtBarrier signal. 
+bAtBarrier wait.
+'a jumping over the barrier' crTrace ] 
+.
+[ 'b running to the barrier' crTrace.
+bAtBarrier signal. 
+aAtBarrier wait.
+'b jumping over the barrier' crTrace ] 
+} shuffled do: [ :each | each fork ]
 \end{displaycode}
 \section{Shared Queue}
 Instances de la classe SharedQueue  –  Canaux d'échange d'objets 
@@ -700,25 +889,25 @@ Instances de la classe SharedQueue  –  Canaux d'échange d'objets
 |file| 
 file := SharedQueue new.
 [
-	[ |number| "reader 1"
+	[ | number | "reader 1"
 	number := file next.
-	number ifNil: [Processor terminateActive].
-	number crLog ] repeat
+	number ifNil: [ProcessorScheduler terminateActive].
+	number crTrace ] repeat
 	] fork. 
 \end{displaycode}
 
 \begin{displaycode}{plain}
-	[ |counter| "reader 2" 
+	[ | counter | "reader 2" 
 	counter := 0. 
-	[file next ifNil: [ ('total = ', counter asString) crLog.
-		Processor terminateAc3ve].
+	[file next ifNil: [ ('total = ', counter asString) crTrace.
+		ProcessorScheduler terminateActive].
 		counter := counter + 1 ] repeat 
 	] fork.
 \end{displaycode}
 
  {[}{[}{[}
 {[}	
-	\textbar{}delayBetweenWrite\textbar{}
+	\textbar{} delayBetweenWrite \textbar{}
 	delayBetweenWrite := Delay forMilliseconds: 100.   
 	1 to: 10 do: {[}:numb\textbar{} 
 		delayBetweenWrite wait.
@@ -726,7 +915,7 @@ file := SharedQueue new.
 	2 timesRepeat: {[}file nextPut: nil{]}
 	{]} fork. 
 {]}{]}{]}
-\chapter{Monitor}
+\section{Monitor}
 A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
 
 \begin{enumerate}
@@ -760,7 +949,39 @@ One process waiting for the default event is woken up.
 Monitor\textgreater{}\textgreater{}signalAll
 All processes waiting for the default event are woken up.
 \section{We need one example here}\chapter{Mutex implementation}
-I would love to understand it :)
+A Mutex is a semaphore with a little more information: the current process running held in the \textcode{owner} instance variable. 
+
+\begin{displaycode}{plain}
+Object subclass: #Mutex
+	instanceVariableNames: 'semaphore owner'
+	classVariableNames: ''
+	package: 'Kernel-Processes'
+\end{displaycode}
+
+The \textcode{initialize} method makes sure that the semaphore is prearmed for mutual exclusion.
+Remember it means that the first waiting process will directly proceed and not get added to the waiting list.
+
+\begin{displaycode}{plain}
+Mutex >> initialize
+	super initialize.
+	semaphore := Semaphore forMutualExclusion
+\end{displaycode}
+
+The key method is the method \textcode{critical:}. It checks if the owner of the mutex is the current thread.
+In such case it executes the protected block. 
+Else it means that 
+
+\begin{displaycode}{plain}
+Mutex >> critical: aBlock
+	"Evaluate aBlock protected by the receiver."
+
+	| activeProcess |
+	activeProcess := Processor activeProcess.
+	activeProcess == owner ifTrue: [ ^aBlock value ].
+	^ semaphore critical: [
+		owner := activeProcess.
+		aBlock ensure: [ owner := nil ]].
+\end{displaycode}
 \chapter{ShareQueue: a Semaphore Example}
 \begin{todo}
 translate stef! 
