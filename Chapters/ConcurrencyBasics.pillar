@@ -412,16 +412,26 @@ It evaluates aBlock only if the receiver is not currently in the process of runn
 If the receiver is, evaluate aBlock after the other ==critical:== message is finished.
 To use a critical, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==
 
-!!!! Example 
+!!!! Example.
 
 [[[
-
+	Here I need a simple race condition 
 
 ]]]
  
+[[[
+	Here I need a simple mutual exclusion
 
+]]]
+ 
+!!!! Deadlocking semaphores.
+Pay attention that a semaphore critical section cannot be nested. A semaphore gets blocked (waiting) when being called from a critical section its protects. 
 
-
+[[[
+| deadlockSem |
+deadlockSem := Semaphore new. 
+deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
+]]]
 
 
 !!! Implementation 
@@ -467,6 +477,14 @@ Semaphore >> wait
 
 
 
+!!! Conclusion
+
+Semaphores are the lower synchronisation mechanisms. 
+Pharo offers other abstractions to synchronize. 
+
+
+
+
 
 !! Scheduler's principles
 
@@ -494,8 +512,6 @@ semaphores as shown in *@ProcessorStateScheduler*.
 
 
 +Revisiting the process states>file://figures/ProcessorStateScheduler.pdf|label=ProcessorStateScheduler+
-
-
 
 
 
@@ -580,18 +596,18 @@ When several access a shared resources, only one gets the resources, the other t
 
 !!! Using a semaphore
 
-We can use a semaphore to control the execution of several threads. 
+As we already saw, we can use a semaphore to control the execution of several threads. 
 
 Here we want to make sure that we can do 10 debit and 10 deposit of the same amount and that we get the same amount at the end. 
 
 [[[
-|lock account|
+| lock counter |
 lock := Semaphore new.
-account := 3000.
+counter := 3000.
 [ 10 timesRepeat: [
 	lock wait.
 	counter := counter + 100.
-	compter crTrace.
+	counter crTrace.
 	lock signal ]
 	] fork.
 	
@@ -601,6 +617,13 @@ account := 3000.
 	lock signal. 
 	lock wait ]
 	] fork
+]]]
+
+[[[
+2900
+3000
+2900
+3000
 ]]]
 
 
@@ -615,26 +638,48 @@ as we see present in the following section.
 
 !!! Using a Mutex
 
-A Mutex is an object to protect a share resources. An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
+A Mutex (MUTual EXclusion) is an object to protect a share resources. 
+A mutex can be used when two or more processes need to access a shared resource concurrently. 
+A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use. Waiting processes are granted access to the mutex in the order the access was requested.
+An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
 
 In the following example the expressions ==Processor yield== ensures that thread of the same priority can get a chance to be executed. 
 
 [[[
-|lock account|
+| lock counter |
 lock := Mutex new.
-account := 3000.
-[10 timesRepeat: [ Processor yield.
-	lock critical: [ account := counter + 100.
-					account crTrace ] ]
+counter := 3000.
+[10 timesRepeat: [ 
+	Processor yield.
+	lock critical: [ counter := counter + 100.
+						counter crTrace ] ]
 	] fork.
 
-[10 timesRepeat: [ Processor yield.
-	lock critical: [ account := counter - 100.
-					account crTrace ] ]
+[10 timesRepeat: [ 
+	Processor yield.
+	lock critical: [ counter := counter - 100.
+					counter crTrace ] ]
 	] fork
 ]]]
 
+[[[
+3100
+3000
+3100
+3000
+]]]
 
+!!!! Nested critical sections.
+In addition a Mutex is also more robust  to nested critical calls than a semaphore.
+For example the following snippet will not deadlock, while a semaphore will. This is why a mutex is also called a recursionLock.
+
+[[[
+|mutex|
+mutex := Mutex new. 
+mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
+]]]
+
+The same code gets blocked on a deadlock with a semaphore.
 
 !!! About Rendez-vous
 
@@ -742,7 +787,6 @@ Here is a possible solution using two semaphores.
 | aAtBarrier bAtBarrier |
 aAtBarrier := Semaphore new.
 bAtBarrier := Semaphore new.
-
 {[ 'a running to the barrier' crTrace.
 aAtBarrier signal. 
 bAtBarrier wait.
@@ -775,7 +819,7 @@ file := SharedQueue new.
 [
 	[ | number | "reader 1"
 	number := file next.
-	number ifNil: [Processor terminateActive].
+	number ifNil: [ProcessorScheduler terminateActive].
 	number crTrace ] repeat
 	] fork. 
 ]]]
@@ -784,7 +828,7 @@ file := SharedQueue new.
 	[ | counter | "reader 2" 
 	counter := 0. 
 	[file next ifNil: [ ('total = ', counter asString) crTrace.
-		Processor terminateAc3ve].
+		ProcessorScheduler terminateActive].
 		counter := counter + 1 ] repeat 
 	] fork.
 ]]]
@@ -854,8 +898,38 @@ All processes waiting for the default event are woken up.
 
 !! Mutex implementation
 
-I would love to understand it :)
+A Mutex is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
 
+[[[
+Object subclass: #Mutex
+	instanceVariableNames: 'semaphore owner'
+	classVariableNames: ''
+	package: 'Kernel-Processes'
+]]]
+
+The ==initialize== method makes sure that the semaphore is prearmed for mutual exclusion.
+Remember it means that the first waiting process will directly proceed and not get added to the waiting list.
+
+[[[
+Mutex >> initialize
+	super initialize.
+	semaphore := Semaphore forMutualExclusion
+]]]
+
+The key method is the method ==critical:==. It checks if the owner of the mutex is the current thread.
+In such case it executes the protected block. 
+Else it means that 
+[[[
+Mutex >> critical: aBlock
+	"Evaluate aBlock protected by the receiver."
+
+	| activeProcess |
+	activeProcess := Processor activeProcess.
+	activeProcess == owner ifTrue: [ ^aBlock value ].
+	^ semaphore critical: [
+		owner := activeProcess.
+		aBlock ensure: [ owner := nil ]].
+]]]
 
 
 !! ShareQueue: a Semaphore Example
