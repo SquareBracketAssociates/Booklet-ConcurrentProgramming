@@ -255,6 +255,9 @@ In the next chapter we explain semaphores since we will explain how the schedule
 
 
 
+
+
+
 !! Semaphores
 
 Often we encounter situations where we need to synchronize processes.
@@ -459,7 +462,9 @@ To use a critical, first the semaphore should be prearmed using the class creati
 ]]]
  
 !!!! Deadlocking semaphores.
-Pay attention that a semaphore critical section cannot be nested. A semaphore gets blocked (waiting) when being called from a critical section its protects. 
+Pay attention that a semaphore critical section cannot be nested. 
+A semaphore gets blocked (waiting) when being called from a critical section its protects. 
+Mutexes (also named RecursionLock) solves this problem. 
 
 [[[
 | deadlockSem |
@@ -520,6 +525,8 @@ Pharo offers other abstractions to synchronize such as Mutexes (also named recur
 
 
 
+
+
 !! Scheduler's principles
 
 In this chapter we revisit the way to scheduler works.
@@ -540,13 +547,16 @@ semaphores as shown in *@ProcessorStateScheduler* :
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
+!!! Priorities
+
+Here a simple examples showing that priorities are taken into account. 
+
 
 
 !!! yield
 We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
-Let us detail how the collaboration occurs: a process has to explicitly give back its execution. 
+We detail how the collaboration occurs: a process has to explicitly give back its execution. 
 As we show in the previous chapter, it does it by sending the message ==yield== to the scheduler. 
-
 
 Now let us study the implementation of the method ==yield== itself. 
 It is really elegant. It creates a process whose execution will signal a semaphore
@@ -585,12 +595,6 @@ Here are the steps:
 
 
 
-
-
-
-
-
-
 !!!Delay
 The class ==Delay== is a central class of Pharo kernel. 
 Typical needs for using delays are 
@@ -612,8 +616,6 @@ delay := Delay forSeconds: 3.
 will print a number each 3 seconds.
 
 Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
-
-
 
 !!! Example
 
@@ -640,7 +642,10 @@ betweenPong := Delay forMilliseconds: 100.
 
 
 
-!! Synchronisations
+
+
+
+!! About Synchronisation
 
 When multiple threads share and modify the same resources we can easily end up in 
 broken state. 
@@ -750,6 +755,299 @@ mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
 The same code gets blocked on a deadlock with a semaphore.
+
+!! Mutex implementation
+
+A Mutex is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
+
+[[[
+Object subclass: #Mutex
+	instanceVariableNames: 'semaphore owner'
+	classVariableNames: ''
+	package: 'Kernel-Processes'
+]]]
+
+The ==initialize== method makes sure that the semaphore is prearmed for mutual exclusion.
+Remember it means that the first waiting process will directly proceed and not get added to the waiting list.
+
+[[[
+Mutex >> initialize
+	super initialize.
+	semaphore := Semaphore forMutualExclusion
+]]]
+
+The key method is the method ==critical:==. It checks if the owner of the mutex is the current thread.
+In such case it executes the protected block. 
+Else it means that 
+[[[
+Mutex >> critical: aBlock
+	"Evaluate aBlock protected by the receiver."
+
+	| activeProcess |
+	activeProcess := Processor activeProcess.
+	activeProcess == owner ifTrue: [ ^aBlock value ].
+	^ semaphore critical: [
+		owner := activeProcess.
+		aBlock ensure: [ owner := nil ]].
+]]]
+
+
+!!! Monitor
+
+A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
+
+# At any time, only one process can execute code inside a critical section of a monitor.
+# A monitor is reentrant, which means that the active process in a monitor never gets blocked when it enters a (nested) critical section of the same monitor.
+#  Inside a critical section, a process can wait for an event that may be coupled to a certain condition. If the condition is not fulfilled, the process leaves the monitor temporarily (to let other processes enter) and waits until another process signals the event. Then, the original process checks the condition again (this is often necessary because the state of the monitor could have changed in the meantime) and continues if it is fulfilled.
+# The monitor is fair, which means that the process that is waiting on a signaled condition the longest gets activated first.
+# The monitor allows you to define timeouts after which a process gets activated automatically.
+
+
+!!! Basic usage:
+
+Monitor>>critical: aBlock
+Critical section.
+Executes aBlock as a critical section. At any time, only one process can execute code in a critical section.
+NOTE: All the following synchronization operations are only valid inside the critical section of the monitor!
+
+Monitor>>wait
+Unconditional waiting for the default event.
+The current process gets blocked and leaves the monitor, which means that the monitor allows another process to execute critical code. When the default event is signaled, the original process is resumed.
+
+Monitor>>waitWhile: aBlock
+Conditional waiting for the default event.
+The current process gets blocked and leaves the monitor only if the argument block evaluates to true. This means that another process can enter the monitor. When the default event is signaled, the original process is resumed, which means that the condition (argument block) is checked again. Only if it evaluates to false, does execution proceed. Otherwise, the process gets blocked and leaves the monitor again...
+
+Monitor>>waitUntil: aBlock
+Conditional waiting for the default event.
+See Monitor>>waitWhile: aBlock.
+
+Monitor>>signal
+One process waiting for the default event is woken up.
+
+Monitor>>signalAll
+All processes waiting for the default event are woken up.
+
+!!! We need one example here
+
+!!! SharedQueue with a monitor
+
+
+
+!! Some examples of semaphores at work
+Semaphores a low-level concurrency abstractions. 
+In this chapter, we present some abstractions built on top of semaphores: Promise, SharedQueue, and Rendez-vous.
+
+!!! Promise
+Sometimes we have a computation that can take times. We would like to have the possibility not be blocked waiting for it especially if we do not need immediately. 
+Of course there is no magic and we accept to only wait when we need the result of the computation.
+We would like a promise that we will get the result in the future.
+In the literature, such abstraction is called a promise or a future.
+Let us implement a simple promise mechanism: our implementation will not manage errors that could happen during the promise execution. 
+The idea behind the implementation is to design a block that
+# returns a promise and will get access to the block execution value
+# executes the block in a separated thread.
+
+!!! Illustration
+
+For example,  ==[ 1 + 2 ] promise== returns a promise, and executes ==1 + 2== in a different thread. 
+When the user wants to know the value of the promise it sends the message ==value== to the promise:
+if the value has been computed, it is handed in, else it is blocked waiting for the result to be computed.
+
+The implementation uses a semaphore to protect the computed value, it means that the requesting process will 
+wait for the semaphore until the value is available, but the user of the promise will only be blocked when it requests the value 
+of the promise (not on promise creation).
+
+The following snippet shows that even if the promise contains an endless loop, it is only looping forever when the promise value is requested - the variable ==executed== is true and the program loops forever.
+
+[[[
+| executed promise |
+executed := false. 
+promise := [ endless loops ] promise. 
+executed := true. 
+promise value
+]]]
+
+!!! Promis implementation
+Let us write some tests:
+First we checks that a promise does not have value when it is only created. 
+
+[[[
+testPromiseCreation
+	| promise |
+	promise := [ 1 + 2 ] promise.
+	self deny: promise hasValue.
+	self deny: promise equals: 3
+]]]
+
+The second test, create a promise and shows that when its value is requested its value is returned. 
+
+[[[
+testPromise
+	| promise |
+	promise := [ 1 + 2 ] promise.
+	self assert: promise value equals: 3
+]]]
+
+It is difficult to test that a program will be blocked until the value is present, since it will block
+the test runner thread itself.
+What we can do is to make the promise execution waits on a semaphore before computing a value 
+and to create a second thread that waits for a couple of seconds and signals semaphore.
+This way we can check that the execution is happening or not.  
+
+[[[
+testPromiseBlockingAndUnblocking
+
+	| controllingPromiseSemaphore promise |
+	controllingPromiseSemaphore := Semaphore new.
+	
+	[ (Delay forSeconds: 2) wait.
+	controllingPromiseSemaphore signal ] fork.
+	
+	promise := [ controllingPromiseSemaphore wait. 
+				1 + 3 ] promise. 			
+	self deny: promise hasValue.
+	
+	(Delay forSeconds: 5) wait. 
+	self assert: promise hasValue.
+	self assert: promise value equals: 4
+]]]
+
+We have in total three threads: One thread created by the promise that is waiting on the controlling semaphore.
+One thread executing the controlling semaphore and one thread executing the test itself. 
+When the test is executed, two threads are spawned and the test will first check that the promise has not been executed
+and wait more time than the thread controlling semaphore: this thread is waiting some seconds to make sure that 
+the test can execute the first assertion, then it signals the controlling semaphore. 
+When this semaphore is signalled, the promise execution thread is scheduled and will be executed.
+
+!!! Implementation
+
+We define two methods on the ==BlockClosure== class: ==promise== and ==promiseAt:==.
+
+[[[
+BlockClosure >> promise
+	^ self promiseAt: Processor activePriority
+]]]
+
+==promiseAt:== creates and return a promise object. In addition, in a separate process, it stores the value of the block itself in the promise. 
+
+[[[
+BlockClosure >> promiseAt: aPriority
+	"Answer a promise that represents the result of the receiver execution
+	at the given priority."
+	
+	| promise |
+	promise := Promise new.
+	[ promise value: self value ] forkAt: aPriority.
+	^ promise
+]]]
+
+We create a class with a semaphore protecting the computed value, a value and a boolean that lets us know the state of the promise. 
+
+[[[
+Object subclass: #Promise
+	instanceVariableNames: 'valueProtectingSemaphore value hasValue'
+	classVariableNames: ''
+	package: 'Promise'
+]]]
+
+We initialize by simply creating a semaphore and setting that the value has not be computed.
+
+[[[
+Promise >> initialize
+	super initialize.
+	valueProtectingSemaphore := Semaphore new.
+	hasValue := false
+]]]
+
+We provide on simple testing method to know the state of the promise. 
+
+[[[
+Promise >> hasValue
+	^ hasValue
+]]]
+
+
+Nwo the method ==value== wait on the protecting semaphore. 
+Once it is executing, it means that the promise has computed its value, so it should not block anymore.
+This is why it signals the protecting semaphore before returning the value.
+
+[[[
+Promise >> value
+	"Wait for a value and once it is available returns it"
+	
+	valueProtectingSemaphore wait.
+	valueProtectingSemaphore signal. "To allow multiple requests for the value."
+	^ value 
+]]]
+
+Finally the method == value:==  stores the value, set that the value has been computed and signal the protecting semaphore that the value is available. Note that such method should not be directly use but should only be invoked by a block closure. 
+
+[[[
+Promise >> value: resultValue
+
+	value := resultValue.
+	hasValue := true.
+	valueProtectingSemaphore signal
+]]]
+
+
+
+
+
+!!! ShareQueue: a Semaphore Example
+
+@@todo translate stef! 
+
+Une SharedQueue, ou file partagée, est une structure FIFO (First In First Out, le premier élément entré est le premier sorti), dotée de sémaphores de protection contre les accès concurrents. Cette structure est utilisée dans les situations où plusieurs processus fonctionnent simultanément et sont susceptibles d’accéder à cette même structure.
+Sa définition est la suivante :
+
+
+[[[
+Object subclass: #SharedQueue
+	instanceVariableNames: 'contentsArray readPosition writePosition accessProtect readSynch ' 
+	package: 'Collections-Sequenceable'
+]]]
+
+
+==accessProtect== est un sémaphore d’exclusion mutuelle pour l’écriture, tandis que readSync est utilisé pour la synchronisation en lecture. Ces variables sont instanciées par la méthode d’initialisation de la façon suivante :
+
+[[[
+accessProtect := Semaphore forMutualExclusion.
+readSynch := Semaphore new
+]]]
+
+Ces deux sémaphores sont utilisés dans les méthodes d’accès et d’ajouts d’éléments (voir figure 6- 5).
+
+[[[
+SharedQueue >> next
+	| value |
+	readSynch wait.
+	accessProtect
+		critical: [readPosition = writePosition
+				ifTrue: [self error: 'Error in SharedQueue synchronization'.
+					Value := nil]
+				ifFalse: [value := contentsArray at: readPosition.
+					contentsArray at: readPosition put: nil.
+					readPosition := readPosition + 1]].
+	^ value
+]]]
+
+Dans la méthode d’accès, next, le sémaphore de synchronisation en lecture « garde » l’entrée de la méthode (ligne 3). Si un processus envoie le message next alors que la file est vide, il sera suspendu et placé dans la file d’attente du sémaphore readSync par la méthode wait. Seul l’ajout d’un nouvel élément pourra le rendre à nouveau actif. La section critique gérée par le sémaphore accessProtect (lignes 4 à 10) garantit que la portion de code contenue dans le bloc est exécutée sans qu’elle puisse être interrompue par un autre sémaphore, ce qui rendrait l’état de la file inconsistant.
+
+Dans la méthode d’ajout d’un élément, ==nextPut:==, la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
+
+
+[[[
+SharedQueue >> nextPut: value 
+	accessProtect
+		critical: [ writePosition > contentsArray size
+				ifTrue: [self makeRoomAtEnd].
+			contentsArray at: writePosition put: value.
+			writePosition := writePosition + 1].
+			readSynch signal.
+			^ value
+]]]
 
 !!! About Rendez-vous
 
@@ -868,200 +1166,6 @@ aAtBarrier wait.
 'b jumping over the barrier' crTrace ] 
 } shuffled do: [ :each | each fork ]
 ]]]
-
-
-
-
-
-
-
-
-!!! Shared Queue
-
-Instances de la classe SharedQueue  –  Canaux d'échange d'objets 
-•  Analogues aux sockets/streams ou pipes unix  –  Mais, synchronisés 
-•  1 écrivain ou 1 lecteur à la fois 
-•  Les lecteurs sont bloqués quand la file est vide
-
-[[[
-|file| 
-file := SharedQueue new.
-[
-	[ | number | "reader 1"
-	number := file next.
-	number ifNil: [ProcessorScheduler terminateActive].
-	number crTrace ] repeat
-	] fork. 
-]]]
-
-[[[
-	[ | counter | "reader 2" 
-	counter := 0. 
-	[file next ifNil: [ ('total = ', counter asString) crTrace.
-		ProcessorScheduler terminateActive].
-		counter := counter + 1 ] repeat 
-	] fork.
-]]]
-
-
- [[[
-[	
-	| delayBetweenWrite |
-	delayBetweenWrite := Delay forMilliseconds: 100.   
-	1 to: 10 do: [:numb| 
-		delayBetweenWrite wait.
-		file nextPut: numb].
-	2 timesRepeat: [file nextPut: nil]
-	] fork. 
-]]]
-
-
-
-
-
-
-
-
-!!! Monitor
-
-A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
-
-# At any time, only one process can execute code inside a critical section of a monitor.
-# A monitor is reentrant, which means that the active process in a monitor never gets blocked when it enters a (nested) critical section of the same monitor.
-#  Inside a critical section, a process can wait for an event that may be coupled to a certain condition. If the condition is not fulfilled, the process leaves the monitor temporarily (to let other processes enter) and waits until another process signals the event. Then, the original process checks the condition again (this is often necessary because the state of the monitor could have changed in the meantime) and continues if it is fulfilled.
-# The monitor is fair, which means that the process that is waiting on a signaled condition the longest gets activated first.
-# The monitor allows you to define timeouts after which a process gets activated automatically.
-
-
-!!! Basic usage:
-
-Monitor>>critical: aBlock
-Critical section.
-Executes aBlock as a critical section. At any time, only one process can execute code in a critical section.
-NOTE: All the following synchronization operations are only valid inside the critical section of the monitor!
-
-Monitor>>wait
-Unconditional waiting for the default event.
-The current process gets blocked and leaves the monitor, which means that the monitor allows another process to execute critical code. When the default event is signaled, the original process is resumed.
-
-Monitor>>waitWhile: aBlock
-Conditional waiting for the default event.
-The current process gets blocked and leaves the monitor only if the argument block evaluates to true. This means that another process can enter the monitor. When the default event is signaled, the original process is resumed, which means that the condition (argument block) is checked again. Only if it evaluates to false, does execution proceed. Otherwise, the process gets blocked and leaves the monitor again...
-
-Monitor>>waitUntil: aBlock
-Conditional waiting for the default event.
-See Monitor>>waitWhile: aBlock.
-
-Monitor>>signal
-One process waiting for the default event is woken up.
-
-Monitor>>signalAll
-All processes waiting for the default event are woken up.
-
-!!! We need one example here
-
-
-
-
-
-
-
-!! Mutex implementation
-
-A Mutex is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
-
-[[[
-Object subclass: #Mutex
-	instanceVariableNames: 'semaphore owner'
-	classVariableNames: ''
-	package: 'Kernel-Processes'
-]]]
-
-The ==initialize== method makes sure that the semaphore is prearmed for mutual exclusion.
-Remember it means that the first waiting process will directly proceed and not get added to the waiting list.
-
-[[[
-Mutex >> initialize
-	super initialize.
-	semaphore := Semaphore forMutualExclusion
-]]]
-
-The key method is the method ==critical:==. It checks if the owner of the mutex is the current thread.
-In such case it executes the protected block. 
-Else it means that 
-[[[
-Mutex >> critical: aBlock
-	"Evaluate aBlock protected by the receiver."
-
-	| activeProcess |
-	activeProcess := Processor activeProcess.
-	activeProcess == owner ifTrue: [ ^aBlock value ].
-	^ semaphore critical: [
-		owner := activeProcess.
-		aBlock ensure: [ owner := nil ]].
-]]]
-
-
-!! ShareQueue: a Semaphore Example
-
-@@todo translate stef! 
-
-Une SharedQueue, ou file partagée, est une structure FIFO (First In First Out, le premier élément entré est le premier sorti), dotée de sémaphores de protection contre les accès concurrents. Cette structure est utilisée dans les situations où plusieurs processus fonctionnent simultanément et sont susceptibles d’accéder à cette même structure.
-Sa définition est la suivante :
-
-
-[[[
-Object subclass: #SharedQueue
-	instanceVariableNames: 'contentsArray readPosition writePosition accessProtect readSynch ' 
-	package: 'Collections-Sequenceable'
-]]]
-
-
-==accessProtect== est un sémaphore d’exclusion mutuelle pour l’écriture, tandis que readSync est utilisé pour la synchronisation en lecture. Ces variables sont instanciées par la méthode d’initialisation de la façon suivante :
-
-[[[
-accessProtect := Semaphore forMutualExclusion.
-readSynch := Semaphore new
-]]]
-
-Ces deux sémaphores sont utilisés dans les méthodes d’accès et d’ajouts d’éléments (voir figure 6- 5).
-
-[[[
-SharedQueue >> next
-	| value |
-	readSynch wait.
-	accessProtect
-		critical: [readPosition = writePosition
-				ifTrue: [self error: 'Error in SharedQueue synchronization'.
-					Value := nil]
-				ifFalse: [value := contentsArray at: readPosition.
-					contentsArray at: readPosition put: nil.
-					readPosition := readPosition + 1]].
-	^ value
-]]]
-
-Dans la méthode d’accès, next, le sémaphore de synchronisation en lecture « garde » l’entrée de la méthode (ligne 3). Si un processus envoie le message next alors que la file est vide, il sera suspendu et placé dans la file d’attente du sémaphore readSync par la méthode wait. Seul l’ajout d’un nouvel élément pourra le rendre à nouveau actif. La section critique gérée par le sémaphore accessProtect (lignes 4 à 10) garantit que la portion de code contenue dans le bloc est exécutée sans qu’elle puisse être interrompue par un autre sémaphore, ce qui rendrait l’état de la file inconsistant.
-
-Dans la méthode d’ajout d’un élément, ==nextPut:==, la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
-
-
-[[[
-SharedQueue >> nextPut: value 
-	accessProtect
-		critical: [ writePosition > contentsArray size
-				ifTrue: [self makeRoomAtEnd].
-			contentsArray at: writePosition put: value.
-			writePosition := writePosition + 1].
-			readSynch signal.
-			^ value
-]]]
-
-
-
-
-
-
-
 
 
 
