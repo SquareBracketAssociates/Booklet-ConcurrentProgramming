@@ -571,6 +571,15 @@ Figure *@yield* illustrates the execution of the two following processes yieldin
 [11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
 ]]]
 
+Here are the steps:
+# Processes P1 and P2 are scheduled and in the list of the processor.
+# P1 is active, it writes 1 and send the message ==yield==.
+# The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list. P1 is added to S1 waiting list.
+# P2 is active, it writes 10 and send the message ==yield==.
+# The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list. P2 is added to S2 waiting list.
+# Py1 is active. S1 is signalled. 
+# P1 is scheduled, move from semaphore pending list to processor list.
+# Py2 is active. S2 is signalled.
 
 +Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
 
