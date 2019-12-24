@@ -4,11 +4,14 @@ Now, if you happen to create many green threads (called Process in Pharo) we sug
 have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
 You should definitively have a look at it. 
 
-You have in your hand the first (well not the first) draft of thi booklet and we are interesting in typos, english corrections,
-potential mistakes we would have done or any kind of feedback. 
-You can simply contact stephane.ducasse@inria.fr
+You have in your hand the first (well not the first) draft of this booklet. We are interesting in typos, english corrections,
+potential mistakes or any kind of feedback. 
 
-24 December 2019. 
+You can simply contact us at stephane.ducasse@inria.fr
+
+24 December 2019.
+
+
 
 !! Concurrent Programming in Pharo
 
@@ -62,12 +65,11 @@ Let us look at what is a process.
 
 !!! Process
 
-A process is an instance of the class ==Process==. 
-This is class is a subclass of the class ==Link==. 
-A link is an element of a linked list (class ==LinkedList==). 
-This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance. 
-Note that this linked list is tailored for the Process scheduler logic. 
-Better use another one if you need one.
+A process is an instance of the class ==Process==.
+This is class is a subclass of the class ==Link==.
+A link is an element of a linked list (class ==LinkedList==).
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
+Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
 
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
@@ -99,12 +101,11 @@ At this moment the block of this process will be executed.
 
 !!!! Creating a process without scheduling it
 We can also create a process which is not scheduled (hence ""suspended"") using the message ==newProcess==.
+Then later on we can schedule the process by sending it the message ==resume==.
 
-You can i
 [[[
 | pr |
-pr := [ 1 to: 10 do: [ :i |
-   i  printString traceCr ] ] newProcess.
+pr := [ 1 to: 10 do: [ :i | i traceCr ] ] newProcess.
 pr inspect
 ]]]
 
@@ -119,7 +120,9 @@ self resume
 
 
 Also ""suspended"" process can be executed immediately by sending it the ==run== message.
-The message ==run== suspends the current process and execute the receiver process at the highest priority.
+But watch out because the message ==run== suspends the current process and executes the receiver process at the highest priority.
+So this is not a message that we generally should use.
+
 
 !!!! Passing arguments to a process
 You can also pass arguments to a process with the message ==newProcessWith: anArray== as follows:
@@ -127,24 +130,30 @@ You can also pass arguments to a process with the message ==newProcessWith: anAr
 [[[
 | pr |
 pr := [ :max |
-  1 to: max do: [ :i |
-    i  printString crTrace ] ] newProcessWith: #(20).
+  1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
 pr resume
 ]]]
 
-Note that the elements of the argument array are passed to the corresponding block parameters.
+Note that argument array  are passed to the corresponding block parameters.
 
 !!!! Suspending and terminating a process
 A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
-A suspended processed can be rescheduled using the message ==resume==. 
+A suspended processed can be rescheduled using the message ==resume== that we saw previously.
 We can also terminate a process using the message ==terminate==. 
 A terminated process cannot be scheduled any more.
 
+[[[
+| pr |
+pr := [ :max |
+  1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
+pr resume
+]]]
+
 !!!! Creating a waiting process
 As you see on Figure *@processStates* a process can be in a waiting state.
-It means that the process is blocked waiting to be rescheduled. 
+It means that the process is blocked waiting for a change to happen (usually waiting for a semaphore to be signalled).
 This happens when you need to synchronize concurrent processes.
-The basic synchronization mechanism is a semaphore and we will cover this deeply in subsequent sections.
+The basic synchronization mechanism is a semaphore and we will cover this deeply in subsequent chapters.
 
 
 !!! Creation API Summary
