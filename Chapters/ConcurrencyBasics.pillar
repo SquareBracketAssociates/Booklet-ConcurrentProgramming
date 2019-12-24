@@ -4,6 +4,12 @@ Now, if you happen to create many green threads (called Process in Pharo) we sug
 have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
 You should definitively have a look at it. 
 
+You have in your hand the first (well not the first) draft of thi booklet and we are interesting in typos, english corrections,
+potential mistakes we would have done or any kind of feedback. 
+You can simply contact stephane.ducasse@inria.fr
+
+24 December 2019. 
+
 !! Concurrent Programming in Pharo
 
 Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
@@ -27,32 +33,47 @@ They have their own execution flow but share the same memory space and use concu
 
 
 !!! A simple example
-Let us start with a simple example. 
-We will explain all the details in subsequent sections. 
-The following code creates two processes using the message ==fork== sent to a block. 
-In each process we enumerate numbers. 
-During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
-At the end of the loop we refresh the ==Transcript== output.
+Let us start with a simple example. We will explain all the details in subsequent sections.
+The following code creates two processes using the message ==fork== sent to a block.
+In each process we enumerate numbers: the first process from 1 to 10 and the second one form 101 to 110.
+During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed.
+
 
 [[[
 [ 1 to: 10 do: [ :i |
-  Transcript nextPutAll: i printString, ' '.
-  Processor yield ].
-Transcript endEntry ] fork.
+  i trace; trace: ' '.
+  Processor yield ] ] fork.
 
 [ 101 to: 110 do: [ :i |
-  Transcript nextPutAll: i  printString, ' '.
-  Processor yield ].
-Transcript endEntry ] fork
+  i trace; trace: ' '.
+  Processor yield ] ] fork
 ]]]
 
-Figure *@TwoInterleavingProcesses* shows the output produced by the execution of the snippet.
+The output is the following one: 
 
-+Two interleaving processes.>file://figures/TwoInterleavedProcesses.pdf|width=60|label=TwoInterleavingProcesses+
+[[[
+1 101 2 102 3 103 4 104 5 105 6 106 7 107 8 108 9 109 10 110 
+]]]
 
-We see that the two programs run concurrently, each outputting a number at a time and not producing two numbers in a row.
+We see that the two processes run concurrently, each outputting a number at a time and not producing two numbers in a row.
+We also see that a process has to explicitely give back the control of the execution to the schedule using the expression ==Processor yield==
 
 Let us look at what is a process.
+
+!!! Process
+
+A process is an instance of the class ==Process==. 
+This is class is a subclass of the class ==Link==. 
+A link is an element of a linked list (class ==LinkedList==). 
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance. 
+Note that this linked list is tailored for the Process scheduler logic. 
+Better use another one if you need one.
+
+A process has the following instance variables:
+- priority: holds an integer to represent the priority level of the process.
+- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
+- myList: the list of processes to which the suspended process belongs to. 
+
 
 !!! Process Lifetime
 
@@ -65,7 +86,7 @@ A process can be in different states depending on its life-time (""runnable"", "
 To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
 
 [[[
-[ 1 to: 10 do: [ :i | i  printString traceCr ] 
+[ 1 to: 10 do: [ :i | i trace ] 
 	] fork
 ]]]
 
@@ -148,43 +169,70 @@ To get the running process, you can execute: ==Processor activeProcess==.
 
 !!!!Process priority
 
-At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. For example, the following snippet is run at the same priority that background user tasks.
+At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. 
+
+
+For example, the following snippet is run at the same priority that background user tasks.
 
 [[[
-[ 1 to: 10 do: [ :i | i  printString crTrace ]
+[ 1 to: 10 do: [ :i | i trace ]
 	] forkAt: Processor userBackgroundPriority
 ]]]
 
+Its output is: 
+
+[[[
+12345678910
+]]]
+
+
+
 Next table lists all the predefined priorities together with their numerical value and purpose.
 
-|!Priority|!Name                    |
-| 100       | timingPriority           | 
+
+|!Priority|!Name or selector|
+| 80| timingPriority| 
 | | For processes that are dependent on real time. 
 | |For example, Delays (see later).
-|  98       | highIOPriority           | 
-| | For time–critical I/O processes, such as handling input from a network.
-|  90       | lowIOPriority            | 
-| | For most I/O processes, such as handling input from the user.
-|  70       | userInterruptPriority    | 
+|  70| highIOPriority| 
+| | The priority at which the most time critical input/output 
+| | processes should run. An example is the process handling input from a 
+| | network.
+|  60| lowIOPriority| 
+| | The priority at which most input/output processes should run. 
+| | Examples are the process handling input from the user (keyboard, 
+| | pointing device, etc.) and the process distributing input from a network.
+|  50| userInterruptPriority| 
 | | For user processes desiring immediate service. 
 | | Processes run at this level will preempt the window scheduler and should,
 | | therefore, not consume the Processor forever.
-|  50       | userSchedulingPriority   | 
+|  40| userSchedulingPriority   | 
 | | For processes governing normal user interaction.
 | | The priority at which the window scheduler runs.
-|  30       | userBackgroundPriority   
+|  30| userBackgroundPriority   
 | | For user background processes.
-|  10       | systemBackgroundPriority 
+|  20| systemBackgroundPriority 
 | | For system background processes. 
 | | Examples are an optimizing compiler or status checker.
-|   1       | systemRockBottomPriority 
+| 10 | lowestPriority 
 | | The lowest possible priority.
+
+
+We generated the table using the following expression
+[[[
+(Processor class organization listAtCategoryNamed: #'priority names' )
+	collect: [ :each | { each . Processor perform: each}  ] 
+>>> #(#(#lowestPriority 10) #(#timingPriority 80) #(#lowIOPriority 60) #(#highIOPriority 70) 
+#(#systemBackgroundPriority 20) #(#userBackgroundPriority 30) 
+#(#userInterruptPriority 50) #(#userSchedulingPriority 40))
+]]]
+
 
 The scheduler knows the currently active process as well as the lists of pending processes based on their priority.
 It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*.
 It uses the priority lists to manage processes that are suspended (and waiting to be scheduled) in the first in first out way.
 
-+The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=60|label=SchedulerSimple+
++The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
 
 There are simple rules to interrupt and change the process to be run:
 
@@ -195,19 +243,15 @@ There are simple rules to interrupt and change the process to be run:
 
 @@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
 
-!!! Process
 
-A process is an instance of the class ==Process==. 
-This is class is a subclass of the class ==Link==. 
-A link is an element of a linked list (class ==LinkedList==). 
-This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance. 
-Note that this linked list is tailored for the Process scheduler logic. 
-Better use another one if you need one.
 
-A process has the following instance variables:
-- priority: holds an integer to represent the priority level of the process.
-- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
-- myList: the list of processes to which the suspended process belongs to. 
+
+
+
+
+
+
+
 
 
 !!! Yielding the computation
@@ -548,10 +592,14 @@ semaphores as shown in *@ProcessorStateScheduler* :
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 !!! Priorities
-
+A runnable process of a given priority is always executed before a process of an inferior pririoty.
 Here a simple examples showing that priorities are taken into account. 
 
-
+[[[
+[10 timesRepeat: [3 traceCr. Processor yield]] forkAt: 2.
+[10 timesRepeat: [2 traceCr.Processor yield]] forkAt: 3.
+[10 timesRepeat: [3 traceCr. Processor yield]] forkAt: 4.
+]]]
 
 !!! yield
 We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
@@ -792,7 +840,7 @@ Mutex >> critical: aBlock
 ]]]
 
 
-!!! Monitor
+!!! (draft) Monitor
 
 A monitor provides process synchronization that is more high-level than the one provided by a semaphore. A monitor has the following properties:
 
@@ -803,7 +851,7 @@ A monitor provides process synchronization that is more high-level than the one 
 # The monitor allows you to define timeouts after which a process gets activated automatically.
 
 
-!!! Basic usage:
+!!! (draft) Basic usage
 
 Monitor>>critical: aBlock
 Critical section.
@@ -828,9 +876,9 @@ One process waiting for the default event is woken up.
 Monitor>>signalAll
 All processes waiting for the default event are woken up.
 
-!!! We need one example here
+!!! (draft)We need one example here
 
-!!! SharedQueue with a monitor
+!!! (draft)SharedQueue with a monitor
 
 
 
@@ -868,7 +916,7 @@ executed := true.
 promise value
 ]]]
 
-!!! Promis implementation
+!!! Promise implementation
 Let us write some tests:
 First we checks that a promise does not have value when it is only created. 
 
@@ -1167,11 +1215,10 @@ aAtBarrier wait.
 } shuffled do: [ :each | each fork ]
 ]]]
 
-
-
-
 !!! Conclusion
 We presented the key elements of basic concurrent programming in Pharo and some implementation details.
+
+
 
 % Local Variables:
 % eval: (flyspell-mode -1)
