@@ -1041,7 +1041,7 @@ mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
 
 The same code gets blocked on a deadlock with a semaphore.
 
-!! Mutex implementation
+!!! Mutex implementation
 
 A Mutex is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
 
