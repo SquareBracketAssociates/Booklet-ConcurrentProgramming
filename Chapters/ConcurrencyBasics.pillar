@@ -828,7 +828,7 @@ The following is based on an answer of E. Miranda on the VM mailing-list.
 
 
 The virtual has a setting to change the behavior of process preemption and especially which process gets
-resumed. 
+resumed. In Pharo the setting is true.
 
 [[[
 Smalltalk vm processPreemptionYields
@@ -841,82 +841,83 @@ However, when a process waits on a semaphore, it is removed from its run queue. 
 The setting does not change anything.  
 
 
-!!!! Comparing the two semantics.
+!!! Comparing the two semantics
 
-The two following examples show the difference between the two regimes set by the ==processPreemptionYields== setting.
+The two following examples show the difference between the two regimes that can be controlled by the ==processPreemptionYields== setting.
 
 
-In the first example we merely create two processes at a lower priority than the active process, at a priority where there are no other processes:
+!!!! First example
 
+Step 1. First we create two processes at a lower priority than the active process and at a priority where there are no other processes.
+The first expression will find an empty priority level at a priority lower than the active process.
+Step 2. Then create two processes at that priority and check that their order in the list is the same as the order in which they were created.
+Step 3. Set the boolean to indicate that this point was reached and block on a delay, allowing the processes to run to termination.
+Check that the processes have indeed terminated.
 [[[
 | run priority process1 process2 |
 run := true.
-
-"find an empty priority level at a priority lower than the active process"
+"step1"
 priority := Processor activePriority - 1.
 [(Processor waitingProcessesAt: priority) isEmpty] whileFalse:
 	[priority := priority - 1].
-
-"Create two processes at that priority"
+"step2"
 process1 := [[run] whileTrue] forkAt: priority.
 process2 := [[run] whileTrue] forkAt: priority.
-
-"Check that their order in the list is the same as the order in which they were created"
 self assert: (Processor waitingProcessesAt: priority) first == process1.
 self assert: (Processor waitingProcessesAt: priority) last == process2.
-
-"set the flag to zero and block on a delay, allowing the processes to run to termination"
+"step3"
 run := false.
 (Delay forMilliseconds: 50) wait.
-
-"Check that they have indeed terminated"
 self assert: (Processor waitingProcessesAt: priority) isEmpty
 ]]]
 
-
-So far so good.  Now let's preempt ==process1== while it is running, by waiting on a delay without setting run to false:
+!!! Second example: preempting P1
+The steps 1 and 2 are identical. 
+Now let's preempt ==process1== while it is running, by waiting on a delay without setting run to false:
 
 [[[
 | run priority process1 process2 |
 run := true.
-
-"find an empty priority level at a priority lower than the active process"
+"step1"
 priority := Processor activePriority - 1.
-[(Processor waitingProcessesAt: priority) isEmpty] whileFalse:
+[(Processor waitingProcessesAt: priority) isEmpty] whileFalse: 
 	[priority := priority - 1].
-
-"Create two processes at that priority"
+"step2"
 process1 := [[run] whileTrue] forkAt: priority.
 process2 := [[run] whileTrue] forkAt: priority.
-
-"Check that their order in the list is the same as the order in which they were created"
 self assert: (Processor waitingProcessesAt: priority) first == process1.
 self assert: (Processor waitingProcessesAt: priority) last == process2.
 
 "Now block on a delay, allowing the first one to run, spinning in its loop.
-When the delay ends the current (the one executing the code snippet) process will preempt process1, 
+When the delay ends the current process (the one executing the code snippet) will preempt process1, 
 because process1 is at a lower priority."
+
 (Delay forMilliseconds: 50) wait.
 
 Smalltalk vm processPreemptionYields
-	ifTrue: "If process preemption yields, process1 will get sent to the back of the run queue (which is wrong; no process explicitly yielded)"
+	ifTrue: 
+		"If process preemption yields, process1 will get sent to the back of the run 
+		queue (which is wrong; no process explicitly yielded)"
 		[ self assert: (Processor waitingProcessesAt: priority) first == process2.
-		 self assert: (Processor waitingProcessesAt: priority) last == process1 ]
-	ifFalse: "If process preemption doesn't yield, the processes retain their order (yay! we indeed have cooperative scheduling within a priority)."
+		self assert: (Processor waitingProcessesAt: priority) last == process1 ]
+	ifFalse: "If process preemption doesn't yield, the processes retain their order 
+		(we have cooperative scheduling within a priority)."
 		[ self assert: (Processor waitingProcessesAt: priority) first == process1.
 		 self assert: (Processor waitingProcessesAt: priority) last == process2 ].
 
-"set the flag to zero and block on a delay, allowing the processes to run to termination"
+"step3"
 run := false.
 (Delay forMilliseconds: 50) wait.
 	"Check that they have indeed terminated"
 self assert: (Processor waitingProcessesAt: priority) isEmpty
 ]]]
 
+Run the above after trying both ==Smalltalk vm processPreemptionYields: false== and ==Smalltalk processPreemptionYields: true==.
 
-Run the above after trying both ==Smalltalk vm processPreemptionYields: false== and ==Smalltalk processPreemptionYields: true==
+What the setting controls is what happens when a process is preempted by a higher-priority process. 
+The old version (processPreemptionYields = true) did an implicit yield of the preempted process. It then changes the order of the run queue
+by putting the preempted process at the end of the run queue. 
 
-Nothing changes within priorities. What the setting controls is what happens when a process is preempted by a higher-priority process.  The old code did an implicit yield of the preempted process, destroying the guarantee of cooperative scheduling within a priority.
 
 
 !!! Conclusion
@@ -1113,9 +1114,9 @@ One process waiting for the default event is woken up.
 Monitor>>signalAll
 All processes waiting for the default event are woken up.
 
-!!! (draft)We need one example here
+!!! (draft) We need one example here
 
-!!! (draft)SharedQueue with a monitor
+!!! (draft) SharedQueue with a monitor
 
 
 
@@ -1280,7 +1281,7 @@ Promise >> value: resultValue
 
 
 
-!!! ShareQueue: a Semaphore Example
+!!! [to be translated] ShareQueue: a Semaphore Example
 
 @@todo translate stef! 
 
