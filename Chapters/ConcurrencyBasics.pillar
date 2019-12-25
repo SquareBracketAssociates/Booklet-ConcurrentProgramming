@@ -44,12 +44,12 @@ During each loop step, using the expression ==Processor yield==, the current pro
 
 [[[
 [ 1 to: 10 do: [ :i |
-  i trace; trace: ' '.
-  Processor yield ] ] fork.
+		i trace; trace: ' '.
+		Processor yield ] ] fork.
 
 [ 101 to: 110 do: [ :i |
-  i trace; trace: ' '.
-  Processor yield ] ] fork
+		i trace; trace: ' '.
+		Processor yield ] ] fork
 ]]]
 
 The output is the following one: 
@@ -74,7 +74,7 @@ Note that this linked list is tailored for the Process scheduler logic. Better u
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
-- myList: the list of processes to which the suspended process belongs to. 
+- myList: the list of processes to which the suspended process belongs to. This list is also called it run queue.
 
 
 !!! Process Lifetime
@@ -88,8 +88,7 @@ A process can be in different states depending on its life-time (""runnable"", "
 To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
 
 [[[
-[ 1 to: 10 do: [ :i | i trace ] 
-	] fork
+[ 1 to: 10 do: [ :i | i trace ] ] fork
 ]]]
 
 This expression creates an instance of the class ==Process==. 
@@ -129,8 +128,9 @@ You can also pass arguments to a process with the message ==newProcessWith: anAr
 
 [[[
 | pr |
-pr := [ :max |
-  1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
+pr := [ :max | 
+		1 to: max do: [ :i | i crTrace ] 
+		] newProcessWith: #(20).
 pr resume
 ]]]
 
@@ -145,7 +145,8 @@ A terminated process cannot be scheduled any more.
 [[[
 | pr |
 pr := [ :max |
-  1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
+		1 to: max do: [ :i | i crTrace ] 
+		] newProcessWith: #(20).
 pr resume
 ]]]
 
@@ -172,9 +173,10 @@ The process creation API is composed of messages sent to blocks.
 Pharo implements time sharing where each process (green thread) has access to the physical processor during a given amount of time. 
 This is the responsibility of the ==ProcessorScheduler== and its unique instance ==Processor== to schedule processes. 
 
-The scheduler maintains lists of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  
+The scheduler maintains lists, also called run queues, of pending processes as well as the currently active one (See Figure *@SchedulerSimple*).  
 To get the running process, you can execute: ==Processor activeProcess==.
-
+Each time a process is created and scheduled it is added at the end of the run queue corresponding to its priority.
+The scheduler will take the first process and executes it until a process of higher priority interrupts it or the process give back control to the processor. 
 
 !!!!Process priority
 
@@ -184,8 +186,7 @@ At any time only one process can be executed. First of all, the processes are be
 For example, the following snippet is run at the same priority that background user tasks.
 
 [[[
-[ 1 to: 10 do: [ :i | i trace ]
-	] forkAt: Processor userBackgroundPriority
+[ 1 to: 10 do: [ :i | i trace ] ] forkAt: Processor userBackgroundPriority
 ]]]
 
 Its output is: 
@@ -250,14 +251,21 @@ There are simple rules to interrupt and change the process to be run:
 - As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
 
-@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
 
 
 
 
+[[[
+[5 timesRepeat: [3 trace. ' ' trace ]] forkAt: 12.
+[5 timesRepeat: [2 trace. ' ' trace ]] forkAt: 13.
+[5 timesRepeat: [1 trace. ' ' trace ]] forkAt: 14.
+]]]
 
+The execution outputs: 
 
-
+[[[
+1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 
+]]]
 
 
 
@@ -269,8 +277,8 @@ Let us start with a small example. We create two processes of the same priority
  that perform a loop displaying numbers.
 
 [[[
-[1 to: 10 do: [:i| i trace. ' ' trace ]] fork.
-[11 to: 20 do: [:i| i trace. ' ' trace ]] fork.
+[ 1 to: 10 do: [:i| i trace. ' ' trace ] ] fork.
+[ 11 to: 20 do: [:i| i trace. ' ' trace ] ] fork.
 ]]]
 
 We obtain the following output
@@ -288,8 +296,8 @@ Therefore it executes until it finishes.
 We modify the example to introduce an explicit return of control to the processor
 
 [[[
-[1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
-[11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+[ 1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
+[ 11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
 ]]]
 
 We obtain the following trace showing that each process gave back the control to the scheduler after each loop step.
@@ -605,24 +613,36 @@ A runnable process of a given priority is always executed before a process of an
 Here a simple examples showing that priorities are taken into account. 
 
 [[[
-[10 timesRepeat: [3 traceCr. Processor yield]] forkAt: 2.
-[10 timesRepeat: [2 traceCr.Processor yield]] forkAt: 3.
-[10 timesRepeat: [3 traceCr. Processor yield]] forkAt: 4.
+[5 timesRepeat: [3 trace. ' ' trace. Processor yield]] forkAt: 12.
+[5 timesRepeat: [2 trace. ' ' trace. Processor yield]] forkAt: 13.
+[5 timesRepeat: [1 trace. ' ' trace. Processor yield]] forkAt: 14.
 ]]]
 
-!!! yield
+We get the following outputs:
+[[[
+1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 
+]]]
+
+It  shows that even if a given showing that even if the third process
+is executed last and yield its computation, the processes of lower priority were not scheduled before 
+the process of higher priority got terminated.
+
+
+@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+
+!!! Understanding yield
 We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
 We detail how the collaboration occurs: a process has to explicitly give back its execution. 
 As we show in the previous chapter, it does it by sending the message ==yield== to the scheduler. 
 
 Now let us study the implementation of the method ==yield== itself. 
 It is really elegant. It creates a process whose execution will signal a semaphore
-and the current process will wait until the created process is scheduler by the processor. 
+and the current process will wait until the created process is scheduled by the processor. 
+
 
 [[[
 ProcessScheduler >> yield
 	"Give other Processes at the current priority a chance to run."
-	<primitive: 167>
 
 	| semaphore |
 	semaphore := Semaphore new.
@@ -639,16 +659,70 @@ Figure *@yield* illustrates the execution of the two following processes yieldin
 ]]]
 
 Here are the steps:
-# Processes P1 and P2 are scheduled and in the list of the processor.
+# Processes P1 and P2 are scheduled and in the list (run queue) of the processor.
 # P1 is active, it writes 1 and send the message ==yield==.
-# The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list. P1 is added to S1 waiting list.
+# The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list (run queue). P1 is added to S1 waiting list.
 # P2 is active, it writes 10 and send the message ==yield==.
-# The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list. P2 is added to S2 waiting list.
+# The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list (run queue). P2 is added to S2 waiting list.
 # Py1 is active. S1 is signalled. 
-# P1 is scheduled, move from semaphore pending list to processor list.
+# P1 is scheduled. It moves from semaphore pending list to processor list (run queue). 
 # Py2 is active. S2 is signalled.
 
 +Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
+
+
+The ==yield== method does the following: 
+# The fork creates a new process. It adds it to the end of the active process's run queue.
+# The message ==wait== in ==semaphore wait== removes the active process from its run queue and adds it to the semaphore list of waiting processes, so the active process is now not runnable but waiting on the semaphore.
+# This allows the next process in the run queue to run, and eventually
+# allows the newly forked process to run, and
+# the signal in ==semaphore signal== removes the process from the semaphore and adds it to the back of the run queue, so
+# all processes at the same priority level as the process that called ==yield== have run.
+
+
+!!!! About the primitive in yield method
+If you look at the exact definition of the yield message in Pharo you will see that it contains an annotation mentionning that this is primitive. 
+The primitive is an optimisation. 
+
+[[[
+ProcessScheduler >> yield
+	| semaphore |
+	<primitive: 167>
+	semaphore := Semaphore new.
+	[semaphore signal] fork.
+	semaphore wait.
+]]]
+
+When this method is executed, either the primitive puts the calling process to the back of its run queue, or (if the primitive is not implemented), it performs 
+what we explained earlier and that is illustrated by the Figure *@yield*.
+
+Note that all the primitive does is to circumvent having to create a semaphore and create and schedule a process, and do a signal and a wait to move a process to the back of its run queue.  This is worthwhile because most of the time a process's run queue is empty, it being the only runnable process at that priority.
+
+Test it:
+[[[
+| yielded |
+yielded := false.
+[ yielded := true ] fork.
+yielded
+>>> false
+]]]
+It returns false since the current process executing the code runs until the end. 
+
+
+[[[
+| yielded |
+yielded := false.
+[ yielded := true ] fork.
+Processor yield.
+yielded
+>>> true
+]]]
+
+This expressions returns true because before the current process gives a chance to the other processes of the same priority 
+to execute. 
+
+@@note to check what is the priority of the current thread version the one of the forked in the previous example?
+
 
 
 
@@ -670,31 +744,185 @@ delay := Delay forSeconds: 3.
   Transcript show: i printString ; cr.
   delay wait ] ] fork
 ]]]
-will print a number each 3 seconds.
+will print a number every 3 seconds.
 
 Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
 
 !!! Example
+The following snippet schedules two processes each of which will display a different message with a  different rate.
 
 [[[
-[
-| betweenPing |  
-betweenPing := Delay forMilliseconds: 300.
-10 timesRepeat: [ 
-   'ping' crTrace. 
-   betweenPing wait] 
-   ] forkAt: Processor userBackgroundPriority.
+[ 10 timesRepeat: [ 
+	'ping' crTrace. 
+	(Delay forMilliseconds: 300) wait ] 
+	] forkAt: Processor userBackgroundPriority.
 	  
-[
-| betweenPong |  
-betweenPong := Delay forMilliseconds: 100.
-10 timesRepeat: [ 
-   'PONG' crTrace. 
-   betweenPong wait]
-   ] forkAt: Processor userBackgroundPriority.
+[ 10 timesRepeat: [ 
+	'PONG' crTrace. 
+	(Delay forMilliseconds: 100) wait]
+	] forkAt: Processor userBackgroundPriority.
+]]]
+
+It produces: 
+
+[[[
+ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  ping  ping  ping  ping  ping  ping 
+]]]
+
+!!! Implementation
+
+The class ==Delay== is complex because when a Pharo image is saved and restarted, running delays should be adapted. 
+A delay in progress when an image snapshot is suspended and resumed when the snapshot is re-started.
+i.e. from the image perspective of timing, the image snapshot never happened.
+We will not cover this. 
+
+[[[
+Delay class >> forMilliseconds: aNumber
+	"Return a new Delay for the given number of milliseconds. 
+	Sending 'wait' to this Delay will cause the sender's process to be 
+	suspended for approximately that length of time."
+
+	^ self new setDelay: aNumber forSemaphore: Semaphore new
+]]]
+
+[[[
+Delay >> setDelay: milliseconds forSemaphore: aSemaphore
+	"Private! Initialize this delay to signal the given semaphore after the given number of milliseconds."
+
+	millisecondDelayDuration := milliseconds asInteger.
+	millisecondDelayDuration < 0 ifTrue: [self error: 'delay times cannot be negative'].
+	delaySemaphore := aSemaphore.
+	beingWaitedOn := false.
+]]]
+
+A delay has 
+- a boolean (==beingWaitedOn==) expressing whether users sent it the message ==wait==.
+- a semaphore that is used by the delay scheduler to make sure that the delay will be sleeping and waken up on time. 
+
+For example the message ==wait== of the class ==Delay== schedules the delay, and make the delay waiting.
+[[[
+Delay >> wait
+	"Schedule this Delay, then wait on its semaphore. The current process will be suspended for the amount of time specified when this Delay was created."
+
+	self schedule.
+	[ delaySemaphore wait ] ifCurtailed: [ self unschedule ]
+]]]
+
+The delay scheduler will then signal this semapharo when needed sending the private message 
+
+[[[
+Delay >> timingPrioritySignalExpired
+	"The delay time has elapsed; signal the waiting process."
+
+	beingWaitedOn := false.
+	delaySemaphore signal.
 ]]]
 
 
+
+!!! About processPreemption and VM
+
+Now we will discuss a bit the settings of the VM regarding process preemption: What exactly happens when a process is 
+preempted by a process of a higher priority, and which process is scheduled after the execution of a yield.
+The following is based on an answer of E. Miranda on the VM mailing-list. 
+
+
+The virtual has a setting to change the behavior of process preemption and especially which process gets
+resumed. 
+
+[[[
+Smalltalk vm processPreemptionYields
+>>> true
+]]]
+
+If  ==Smalltalk processPreemptionYields \=\= false== then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
+It means that it will the first one of this priority to be resumed. 
+However, when a process waits on a semaphore, it is removed from its run queue.  When a process resumes, it always gets added to the back of its run queue. 
+The setting does not change anything.  
+
+
+!!!! Comparing the two semantics.
+
+The two following examples show the difference between the two regimes set by the ==processPreemptionYields== setting.
+
+
+In the first example we merely create two processes at a lower priority than the active process, at a priority where there are no other processes:
+
+[[[
+| run priority process1 process2 |
+run := true.
+
+"find an empty priority level at a priority lower than the active process"
+priority := Processor activePriority - 1.
+[(Processor waitingProcessesAt: priority) isEmpty] whileFalse:
+	[priority := priority - 1].
+
+"Create two processes at that priority"
+process1 := [[run] whileTrue] forkAt: priority.
+process2 := [[run] whileTrue] forkAt: priority.
+
+"Check that their order in the list is the same as the order in which they were created"
+self assert: (Processor waitingProcessesAt: priority) first == process1.
+self assert: (Processor waitingProcessesAt: priority) last == process2.
+
+"set the flag to zero and block on a delay, allowing the processes to run to termination"
+run := false.
+(Delay forMilliseconds: 50) wait.
+
+"Check that they have indeed terminated"
+self assert: (Processor waitingProcessesAt: priority) isEmpty
+]]]
+
+
+So far so good.  Now let's preempt ==process1== while it is running, by waiting on a delay without setting run to false:
+
+[[[
+| run priority process1 process2 |
+run := true.
+
+"find an empty priority level at a priority lower than the active process"
+priority := Processor activePriority - 1.
+[(Processor waitingProcessesAt: priority) isEmpty] whileFalse:
+	[priority := priority - 1].
+
+"Create two processes at that priority"
+process1 := [[run] whileTrue] forkAt: priority.
+process2 := [[run] whileTrue] forkAt: priority.
+
+"Check that their order in the list is the same as the order in which they were created"
+self assert: (Processor waitingProcessesAt: priority) first == process1.
+self assert: (Processor waitingProcessesAt: priority) last == process2.
+
+"Now block on a delay, allowing the first one to run, spinning in its loop.
+When the delay ends the current (the one executing the code snippet) process will preempt process1, 
+because process1 is at a lower priority."
+(Delay forMilliseconds: 50) wait.
+
+Smalltalk vm processPreemptionYields
+	ifTrue: "If process preemption yields, process1 will get sent to the back of the run queue (which is wrong; no process explicitly yielded)"
+		[ self assert: (Processor waitingProcessesAt: priority) first == process2.
+		 self assert: (Processor waitingProcessesAt: priority) last == process1 ]
+	ifFalse: "If process preemption doesn't yield, the processes retain their order (yay! we indeed have cooperative scheduling within a priority)."
+		[ self assert: (Processor waitingProcessesAt: priority) first == process1.
+		 self assert: (Processor waitingProcessesAt: priority) last == process2 ].
+
+"set the flag to zero and block on a delay, allowing the processes to run to termination"
+run := false.
+(Delay forMilliseconds: 50) wait.
+	"Check that they have indeed terminated"
+self assert: (Processor waitingProcessesAt: priority) isEmpty
+]]]
+
+
+Run the above after trying both ==Smalltalk vm processPreemptionYields: false== and ==Smalltalk processPreemptionYields: true==
+
+Nothing changes within priorities. What the setting controls is what happens when a process is preempted by a higher-priority process.  The old code did an implicit yield of the preempted process, destroying the guarantee of cooperative scheduling within a priority.
+
+
+!!! Conclusion
+
+This chapter presents some advanced part of the scheduler and we hope that it gives a better picture of the scheduling behavior
+and in particular the preemption of the current running process by a process of higher priority as well as the way yielding the control is implemented. 
 
 
 
