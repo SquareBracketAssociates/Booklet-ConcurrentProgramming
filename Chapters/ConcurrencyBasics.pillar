@@ -826,19 +826,21 @@ Now we will discuss a bit the settings of the VM regarding process preemption: W
 preempted by a process of a higher priority, and which process is scheduled after the execution of a yield.
 The following is based on an answer of E. Miranda on the VM mailing-list. 
 
-
 The virtual has a setting to change the behavior of process preemption and especially which process gets
-resumed. In Pharo the setting is true.
+resumed. In Pharo the setting is true. It means that the interrupted process will be added to the end of the queue and giving other 
+processes a chance to execute themselves without having to have an explicit ==yield==.
 
 [[[
 Smalltalk vm processPreemptionYields
 >>> true
 ]]]
 
-If  ==Smalltalk processPreemptionYields \=\= false== then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
-It means that it will the first one of this priority to be resumed. 
-However, when a process waits on a semaphore, it is removed from its run queue.  When a process resumes, it always gets added to the back of its run queue. 
-The setting does not change anything.  
+If  ==Smalltalk processPreemptionYields== returns false then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
+It means that it will the first one of this priority to be resumed.
+
+Note that when a process waits on a semaphore, it is removed from its run queue. 
+When a process resumes, it always gets added to the back of its run queue.
+The ==processPreemptionYields== setting does not change anything.  
 
 
 !!! Comparing the two semantics
@@ -897,11 +899,11 @@ because process1 is at a lower priority."
 Smalltalk vm processPreemptionYields
 	ifTrue: 
 		"If process preemption yields, process1 will get sent to the back of the run 
-		queue (which is wrong; no process explicitly yielded)"
+		queue (give a chance to other processes to execute without explicitly yielding a process)"
 		[ self assert: (Processor waitingProcessesAt: priority) first == process2.
 		self assert: (Processor waitingProcessesAt: priority) last == process1 ]
 	ifFalse: "If process preemption doesn't yield, the processes retain their order 
-		(we have cooperative scheduling within a priority)."
+		(process must explicit collaborate using yield to pass control among them."
 		[ self assert: (Processor waitingProcessesAt: priority) first == process1.
 		 self assert: (Processor waitingProcessesAt: priority) last == process2 ].
 
@@ -915,8 +917,9 @@ self assert: (Processor waitingProcessesAt: priority) isEmpty
 Run the above after trying both ==Smalltalk vm processPreemptionYields: false== and ==Smalltalk processPreemptionYields: true==.
 
 What the setting controls is what happens when a process is preempted by a higher-priority process. 
-The old version (processPreemptionYields = true) did an implicit yield of the preempted process. It then changes the order of the run queue
-by putting the preempted process at the end of the run queue. 
+The ==processPreemptionYields = true== does an implicit yield of the preempted process. 
+It then changes the order of the run queue by putting the preempted process at the end of the run queue letting a chance to other processes
+to execute. 
 
 
 
