@@ -17,7 +17,7 @@ You can simply contact us at stephane.ducasse@inria.fr
 
 Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
 
-Pharo's concurrency is ''collaborative'' and ''preemptive''. It is ''preemptive'' because a process with higher priority can interrupt the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
+Pharo's concurrency is ''collaborative'' and ''preemptive''. It is ''preemptive'' because a process with higher priority interrupts the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
 
 In this chapter we present how processes are created and their lifetime. We present
 semaphores since they are the most basic building blocks to support concurrent programming and the infrastructure to execute concurrent programs. We will show how the process scheduler manages the system. 
@@ -246,7 +246,7 @@ It uses the priority lists to manage processes that are suspended (and waiting t
 
 There are simple rules to interrupt and change the process to be run:
 
-- Processes with higher priority can interrupt lower priority processes if they have to be executed. 
+- Processes with higher priority interrupt lower priority processes if they have to be executed. 
 - Processes with the same priority are executed in the same order they were added to scheduled process list.
 - As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
