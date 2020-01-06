@@ -654,15 +654,20 @@ ProcessScheduler >> yield
 Figure *@yield* illustrates the execution of the two following processes yielding their computation.
 
 [[[
-[1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
-[11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+P1 := [1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+P2 := [11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ]] fork.
+]]]
+
+Here is the output
+[[[
+1 11 2 12 3 13 4 14 5 15 6 16 7 17 8 18 9 19 10 20 
 ]]]
 
 Here are the steps:
 # Processes P1 and P2 are scheduled and in the list (run queue) of the processor.
 # P1 is active, it writes 1 and send the message ==yield==.
 # The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list (run queue). P1 is added to S1 waiting list.
-# P2 is active, it writes 10 and send the message ==yield==.
+# P2 is active, it writes 11 and send the message ==yield==.
 # The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list (run queue). P2 is added to S2 waiting list.
 # Py1 is active. S1 is signalled. 
 # P1 is scheduled. It moves from semaphore pending list to processor list (run queue). 
