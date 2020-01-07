@@ -28,7 +28,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2019-12-19 07:10:17 +0000</string>
+	<string>2020-01-07 20:54:16 +0000</string>
 	<key>Modifier</key>
 	<string>ducasse</string>
 	<key>MovementHandleVisible</key>
@@ -867,11 +867,11 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{359.27999196946621, 304.55999319255352}, {58, 18}}</string>
+					<string>{{359.27999196946621, 304.55999319255352}, {69.119998455047607, 18}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
-					<string>YES</string>
+					<string>Vertical</string>
 					<key>Flow</key>
 					<string>Resize</string>
 					<key>FontInfo</key>
@@ -910,12 +910,10 @@
 {\*\expandedcolortbl;;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
-\f0\fs30 \cf0 priority 1}</string>
+\f0\fs30 \cf0 priority 10}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
-					<key>Wrap</key>
-					<string>NO</string>
 				</dict>
 				<dict>
 					<key>Class</key>
@@ -1330,7 +1328,7 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{354.5, 98}, {75, 18}}</string>
+					<string>{{359, 98}, {66, 18}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -1373,7 +1371,7 @@
 {\*\expandedcolortbl;;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
-\f0\fs30 \cf0 priority 100}</string>
+\f0\fs30 \cf0 priority 80}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
@@ -1667,8 +1665,8 @@
 					<integer>48</integer>
 					<key>Points</key>
 					<array>
-						<string>{174.99999839067459, 171.34860129951986}</string>
-						<string>{325.50000593585145, 170.55549506262068}</string>
+						<string>{174.99999839067459, 171.35588896644501}</string>
+						<string>{325.50000656245027, 170.58407969579304}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -1893,8 +1891,8 @@
 					<integer>53</integer>
 					<key>Points</key>
 					<array>
-						<string>{123.60010265941689, 159.11999644339085}</string>
-						<string>{124.10959344599787, 95.499983907685774}</string>
+						<string>{123.60013742488637, 159.11999644339085}</string>
+						<string>{124.10980515344721, 95.499983956175484}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -2064,7 +2062,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{112, 0}, {1168, 777}}</string>
+		<string>{{645, 267}, {1168, 777}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
