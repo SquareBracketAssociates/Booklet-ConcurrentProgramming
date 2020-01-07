@@ -64,10 +64,13 @@ We also see that a process has to explicitely give back the control of the execu
 Let us look at what is a process.
 
 !!! Process
+In  Pharo, a process is an object as anything else.
+A process is an instance of the class ==Process==. 
+Pharo follow the Smalltalk naming and from a terminology point of view, this class should be called a ==Thread== as in other language. 
+It may change in the future.
 
-A process is an instance of the class ==Process==.
 A process has: 
-- a priority (between 10 and 90). This priority
+- a priority (between 10 lowest and 80 highest). Using this priority a process will be able to preempt other processes and it will be managed by the process scheduler in the group of process with the same priority as shown in Figure *@SchedulerSimple*. 
 - when suspended, a process has a suspendedContext which is a stack reification at the moment of the suspension.
 - when suspended, a reference to the scheduler list in which the process is suspended and waiting for the execution. Such list is also called the run queue. 
 
@@ -78,23 +81,10 @@ A process can be in different states depending on its life-time (""runnable"", "
 
 +Process states:  A process (green thread) can be in one of the following states: ""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"".>file://figures/processStates.pdf|label=processStates+
 
-!!!!Creating and launching a new process
 
-To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
-
-[[[
-[ 1 to: 10 do: [ :i | i trace ] ] fork
-]]]
-
-This expression creates an instance of the class ==Process==. 
-It is added to the list of scheduled processes of the process scheduler (as we will explained later). 
-We say that this process is ==runnable==: 
-it can be potentially executed. 
-It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control.
-At this moment the block of this process will be executed.
 
 !!!! Creating a process without scheduling it
-We can also create a process which is not scheduled (hence ""suspended"") using the message ==newProcess==.
+We create a process which is not scheduled (hence ""suspended"") using the message ==newProcess==.
 Then later on we can schedule the process by sending it the message ==resume==.
 
 [[[
@@ -144,6 +134,21 @@ pr := [ :max |
 		] newProcessWith: #(20).
 pr resume
 ]]]
+
+!!!! Creating and scheduling in one go
+
+To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
+
+[[[
+[ 1 to: 10 do: [ :i | i trace ] ] fork
+]]]
+
+This expression creates an instance of the class ==Process==. 
+It is added to the list of scheduled processes of the process scheduler (as we will explained later). 
+We say that this process is ==runnable==: 
+it can be potentially executed. 
+It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control.
+At this moment the block of this process will be executed.
 
 !!!! Creating a waiting process
 As you see on Figure *@processStates* a process can be in a waiting state.
