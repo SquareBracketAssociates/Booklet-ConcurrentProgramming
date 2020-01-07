@@ -17,7 +17,7 @@ Thanks DiagProf and Ben Coman for feedback.
 
 Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
 
-Pharo's concurrency is ''collaborative'' and ''preemptive''. It is ''preemptive'' because a process with higher priority interrupts the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
+Pharo's concurrency is priority-based ''preemptive'' and ''collaborative''. It is ''preemptive'' because a process with higher priority interrupts the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
 
 In this chapter we present how processes are created and their lifetime. We present
 semaphores since they are the most basic building blocks to support concurrent programming and the infrastructure to execute concurrent programs. We will show how the process scheduler manages the system. 
@@ -32,7 +32,7 @@ These processes are lightweight processes as they share a common memory space.
 Such processes are instances of the class ==Process==. 
 Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. 
 In Pharo, processes are what is usually called a (green) thread in other languages. 
-They have their own execution flow but share the same memory space and use concurrent abstractions such semaphores to synchronize with each other.
+They have their own execution flow but share the same memory space and use concurrent abstractions such as semaphores to synchronize with each other.
 
 
 !!! A simple example
@@ -66,15 +66,10 @@ Let us look at what is a process.
 !!! Process
 
 A process is an instance of the class ==Process==.
-This is class is a subclass of the class ==Link==.
-A link is an element of a linked list (class ==LinkedList==).
-This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
-Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
-
-A process has the following instance variables:
-- priority: holds an integer to represent the priority level of the process.
-- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
-- myList: the list of processes to which the suspended process belongs to. This list is also called it run queue.
+A process has: 
+- a priority (between 10 and 90). This priority
+- when suspended, a process has a suspendedContext which is a stack reification at the moment of the suspension.
+- when suspended, a reference to the scheduler list in which the process is suspended and waiting for the execution. Such list is also called the run queue. 
 
 
 !!! Process Lifetime
@@ -590,11 +585,23 @@ Pharo offers other abstractions to synchronize such as Mutexes (also named recur
 
 !! Scheduler's principles
 
-In this chapter we revisit the way to scheduler works.
+In this chapter we revisit the way to scheduler works and present some implementation aspects.
 In particular we show how yield is implemented.
 Finally we show how delays are used and implemented.
 
-!!! Revisiting Process states
+!!! Revisiting Process 
+
+The class ==Process== is a subclass of the class ==Link==.
+A link is an element of a linked list (class ==LinkedList==).
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
+Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
+
+A process has the following instance variables:
+- priority: holds an integer to represent the priority level of the process.
+- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
+- myList: the list of processes to which the suspended process belongs to. This list is also called it run queue.
+
+!!!! states
 
 We saw previously the differen states a process can be in. 
 We also saw semaphores which suspend and resume suspended processes. 
