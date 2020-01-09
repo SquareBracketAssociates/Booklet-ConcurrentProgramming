@@ -472,7 +472,7 @@ semaphore := Semaphore new.
 p1 := [ semaphore wait.
 		'p1' crTrace ] fork.
 		
-p2 := [semaphore signal.
+p2 := [ semaphore signal.
 		'p2' crTrace ] fork.
 ]]]
 
@@ -481,15 +481,37 @@ p2 := [semaphore signal.
 
 Now the question is to understand what is the generated trace which is ==p2== then ==p1==. 
 
+[[[
+p2
+p1
+]]]
+
 Let us explain why.
 - ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
-- ==p2== is scheduled and it signals the semaphore. The semaphore takes the first waiting process (==p1==) and reschedule it by adding it to the end of the suspended lists.
+- ==p2== is scheduled and it signals the semaphore. The semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended lists. ==p2== continues its execution.
 
 
+Let us slightly change the example to show how priorities are involved during the signalling process.
 
+[[[
+| semaphore p1 p2 |
+semaphore := Semaphore new.
+p1 := [ semaphore wait.
+		'p1' crTrace ] forkAt: 30.
 
+p2 := [semaphore signal.
+	'p2' crTrace ] forkAt: 20.
+]]]
 
+It outputs: 
 
+[[[
+p1 
+p2
+]]]
+
+As a conclusion when the semaphore is signalled, the first waiting process of the semaphore is removed from the semaphore list,
+and resumed following the preemption rules of the scheduler.
 
 
 
