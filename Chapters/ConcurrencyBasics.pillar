@@ -13,7 +13,8 @@ You can simply contact us at stephane.ducasse@inria.fr
 
 Thanks DiagProf and Ben Coman for feedback.
 
-!! Concurrent Programming in Pharo
+!! Concurrent programming in Pharo
+@chaconcprog
 
 Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
 
@@ -39,17 +40,17 @@ They have their own execution flow but share the same memory space and use concu
 Let us start with a simple example. We will explain all the details in subsequent sections.
 The following code creates two processes using the message ==fork== sent to a block.
 In each process we enumerate numbers: the first process from 1 to 10 and the second one form 101 to 110.
-During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed.
-
+During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
+We say that the active process relinquish its execution.
 
 [[[
 [ 1 to: 10 do: [ :i |
-		i trace; trace: ' '.
-		Processor yield ] ] fork.
+	i trace; trace: ' '.
+	Processor yield ] ] fork.
 
 [ 101 to: 110 do: [ :i |
-		i trace; trace: ' '.
-		Processor yield ] ] fork
+	i trace; trace: ' '.
+	Processor yield ] ] fork
 ]]]
 
 The output is the following one: 
@@ -59,9 +60,10 @@ The output is the following one:
 ]]]
 
 We see that the two processes run concurrently, each outputting a number at a time and not producing two numbers in a row.
-We also see that a process has to explicitely give back the control of the execution to the schedule using the expression ==Processor yield==
+We also see that a process has to explicitely give back the control of the execution to the schedule using the expression ==Processor yield==. 
+We will explain this with more details in the following.
 
-Let us look at what is a process.
+Let us look at what a process is.
 
 !!! Process
 In  Pharo, a process is an object as anything else.
@@ -75,7 +77,7 @@ A process has:
 - when runnable, a reference to the scheduler list in which the process is suspended and waiting for execution. Such a list is also called the run queue.
 
 
-!!! Process Lifetime
+!!! Process lifetime
 
 A process can be in different states depending on its life-time (""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"") as shown in Figure *@processStates*. We look at such states now.
 
@@ -95,7 +97,7 @@ pr := [ 1 to: 10 do: [ :i | i traceCr ] ] newProcess.
 pr inspect
 ]]]
 
-To be executed, this process should be scheduled by sending it the message ==resume==.
+To be executed, this process should be scheduled and added to the list of suspended processes managed by the process scheduled. This is simpl done by sending it the message ==resume==.
 
 In the inspector open by the previous expression, you can execute ==self resume== and then the process will be scheduled. 
 It means that he will be added to the priority list of the process scheduler and that the process scheduler will schedule it (assuming that there
@@ -124,20 +126,22 @@ Note that argument array are passed to the corresponding block parameters.
 A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
 A suspended processed can be rescheduled using the message ==resume== that we saw previously.
 We can also terminate a process using the message ==terminate==. 
-A terminated process cannot be scheduled any more.
+A terminated process cannot be scheduled anymore.
+The process scheduler terminates the process once its execution is done. 
 
 [[[
 | pr |
 pr := [ :max |
 		1 to: max do: [ :i | i crTrace ] 
 		] newProcessWith: #(20).
-pr resume
+pr resume.
+pr isTerminated
+>>> true
 ]]]
 
 !!!! Creating and scheduling in one go
-
-To execute concurrently a program, we write such a program in a block and send to the block the message ==fork==.
-
+We can also create and schedule a process using an helper method named: ==fork==.
+It is basically sending the ==newProcess== message and a ==resume== message to the created process. 
 [[[
 [ 1 to: 10 do: [ :i | i trace ] ] fork
 ]]]
@@ -234,11 +238,9 @@ It uses the priority lists to manage processes that are suspended (and waiting t
 
 +The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
 
-There are simple rules to interrupt and change the process to be run:
-
-- Processes with higher priority interrupt lower priority processes if they have to be executed. 
-- Processes with the same priority are executed in the same order they were added to scheduled process list.
-- As mentioned before, a process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
+There are simple rules that manages process scheduling. We will refine the rules a bit later:
+- Processes with higher priority preempt (interrupt) lower priority processes, if they have to be executed.
+- Assuming an ideal world where processes could execute in one shot, processes with the same priority are executed in the same order they were added to scheduled process list. (See below for a better explanation).
 
 
 
@@ -258,42 +260,59 @@ The execution outputs:
 ]]]
 
 
-
-
-
 !!! Yielding the computation
-
-Let us start with a small example. We create two processes of the same priority
- that perform a loop displaying numbers.
+Now we should see how we express that a process can release its execution and let other processes of the same priority 
+perform their tasks. 
+Let us start with a small example.
+We create two processes of the same priority that perform a loop displaying numbers.
 
 [[[
-[ 1 to: 10 do: [:i| i trace. ' ' trace ] ] fork.
-[ 11 to: 20 do: [:i| i trace. ' ' trace ] ] fork.
+| p1 p2 |
+p1 := [ 1 to: 10 do: [:i| i trace. ' ' trace ] ] fork.
+p2 := [ 11 to: 20 do: [:i| i trace. ' ' trace ] ] fork.
 ]]]
 
-We obtain the following output
+We obtain the following output:
 [[[
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
 ]]]
 
 This is normal since the processes have the same priority. 
 They are scheduled and executed one after the other.
+So ==p1== executes and displays its output. 
+Then it terminates and ==p2== gets the control and executes. 
+It displays its output and get terminated.
+
 During the execution of the one of the process nothing forces it to release computation. 
 Therefore it executes until it finishes. 
+It means that if a process has an endless loop it will not release the execution 
+except if it is preempted by a process of higher priority (see Chapter scheduler's principle )
+
+
+
 
 !!!! Using yield
 
 We modify the example to introduce an explicit return of control to the processor
 
 [[[
-[ 1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
-[ 11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
+| p1 p2 |
+p1 := [ 1 to: 10 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
+p2 := [ 11 to: 20 do: [:i| i trace. ' ' trace. Processor yield ] ] fork.
 ]]]
 
 We obtain the following trace showing that each process gave back the control to the scheduler after each loop step.
 [[[
 1 11 2 12 3 13 4 14 5 15 6 16 7 17 8 18 9 19 10 20 
 ]]]
+
+!!!! Summary
+
+Above we said that: 
+- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. They should explicitly give back the computation to give a chance to other pending processes to execute. 
+- A process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
+
+
 
 !!! Important API
 
@@ -319,6 +338,7 @@ In the next chapter we explain semaphores since we will explain how the schedule
 
 
 !! Semaphores
+@chasemaphores
 
 Often we encounter situations where we need to synchronize processes.
 For example, imagine that you only have one pen and that there are several writers wanting to use it.
@@ -352,15 +372,15 @@ Here are the steps illustrating a typical scenario illustrated by the following 
 # The resumed process, P1, will be scheduled by the scheduler.
 
 
-+The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=60|label=Sema1+
++The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=50|label=Sema1+
 
-+The process P4 wants to access the resources: it sends wait to the semaphore.>file://figures/Semaphores2.pdf|width=60|label=Sema2+
++The process P4 wants to access the resources: it sends wait to the semaphore.>file://figures/Semaphores2.pdf|width=50|label=Sema2+
 
-+P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=60|label=Sema3+
++P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=50|label=Sema3+
 
-+P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process. >file://figures/Semaphores4.pdf|width=60|label=Sema4+
++P0 has finished to use the resources: it signals it to the semaphore. The semaphore resumes the first pending process. >file://figures/Semaphores4.pdf|width=50|label=Sema4+
 
-+The resumed process, P1,  is added to the scheduled list of process of the ProcessScheduler.>file://figures/Semaphores5.pdf|width=60|label=Sema5+
++The resumed process, P1,  is added to the scheduled list of process of the ProcessScheduler.>file://figures/Semaphores5.pdf|width=50|label=Sema5+
 
 %The resumed process is now scheduled by the scheduler. When P1 gets executed>file://figures/Semaphores6.pdf|width=60|label=Sema6+
 
@@ -416,16 +436,16 @@ If we do not send a new signal message to the semaphore, the second waiting proc
 The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
 
 [[[
-| semaphore |
+| semaphore p1 p2 p3 |
 semaphore := Semaphore new. 
-[ 'Pharo ' crTrace ] fork. 
+p1 := [ 'Pharo ' crTrace ] fork. 
 
-['is ' crTrace .
+p2 := ['is ' crTrace .
 semaphore wait.
 'super ' crTrace. 
 semaphore signal] fork.
 
-['really ' crTrace. 
+p3 := ['really ' crTrace. 
 semaphore signal.
 semaphore wait.
 'cool!' crTrace ] fork
@@ -435,11 +455,25 @@ You should obtain ==Pharo is really super cool!==
 
 Let us describe what is happening. 
 
-- The first one prints =='Pharo'==. 
-- The second one prints =='is '== and waits.
-- The third one prints =='really '== and signal the semaphore and waits. It is added to the waiting list after the second process.
-- Since the third process signaled the semaphore, the first waiting process (the second one) is scheduled and prints =='super '== and signals the semaphore. 
-- The third process is scheduled and prints: =='cool!'==
+- ==p1== prints =='Pharo'== and finishes. 
+- ==p2== prints =='is '== and waits.
+- ==p3== prints =='really '== and signals the semaphore and waits. It is added to the waiting list after the second process.
+- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super '== and signals the semaphore. 
+- The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 !!! Prearmed semaphore
 
@@ -588,12 +622,13 @@ Pharo offers other abstractions to synchronize such as Mutexes (also named recur
 
 
 !! Scheduler's principles
+@chaprinciples
 
 In this chapter we revisit the way to scheduler works and present some implementation aspects.
 In particular we show how yield is implemented.
 Finally we show how delays are used and implemented.
 
-!!! Revisiting Process 
+!!! Revisiting the class ==Process==
 
 The class ==Process== is a subclass of the class ==Link==.
 A link is an element of a linked list (class ==LinkedList==).
@@ -603,11 +638,11 @@ Note that this linked list is tailored for the Process scheduler logic. Better u
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
-- myList: the list of processes to which the suspended process belongs to. This list is also called it run queue.
+- myList: the process scheduler list of processes to which the suspended process belongs to. This list is also called it run queue and it is only for suspended processes.
 
-!!!! states
+!!!! States
 
-We saw previously the differen states a process can be in. 
+We saw previously the different states a process can be in.
 We also saw semaphores which suspend and resume suspended processes. 
 We revisit the different states of a process by looking its interaction with the process scheduler and 
 semaphores as shown in *@ProcessorStateScheduler* : 
