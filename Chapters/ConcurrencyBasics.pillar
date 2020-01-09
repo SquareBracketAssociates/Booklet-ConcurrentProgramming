@@ -502,7 +502,7 @@ A process wanted a resource protected by a semaphore does not have to be systema
 There are situations where if it would be the case, the system would be blocked forever because no process could signal
 the semaphore: an no pending process would be resumed. 
 
-A semaphore can be rearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages. 
+A semaphore can be prearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages. 
 In such a case, a process requesting to access the resources will just proceed and be scheduled without first being queued to the waiting list.
 
 A semaphore holds a counter of signals that it receives but did not lead to a process execution.
@@ -1006,7 +1006,7 @@ and in particular the preemption of the current running process by a process of 
 
 
 
-!! About Synchronisation
+!! About synchronisation
 
 When multiple threads share and modify the same resources we can easily end up in 
 broken state. 
