@@ -462,7 +462,28 @@ Let us describe what is happening.
 - The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
 
 
+!!!! A key question about signal
 
+Let us image that we have the following two processes and one semaphore. 
+
+[[[
+| semaphore p1 p2 |
+semaphore := Semaphore new.
+p1 := [ semaphore wait.
+		'p1' crTrace ] fork.
+		
+p2 := [semaphore signal.
+		'p2' crTrace ] fork.
+]]]
+
+- The first process is waiting on the semaphore. As soon as the semaphore will be signalled, ==p1== is signal also the semaphore.
+- The second process is just signalling the semaphore and printing. 
+
+Now the question is to understand what is the generated trace which is ==p2== then ==p1==. 
+
+Let us explain why.
+- ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
+- ==p2== is scheduled and it signals the semaphore. The semaphore takes the first waiting process (==p1==) and reschedule it by adding it to the end of the suspended lists.
 
 
 
