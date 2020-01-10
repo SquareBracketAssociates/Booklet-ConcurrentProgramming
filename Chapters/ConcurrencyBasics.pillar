@@ -74,7 +74,7 @@ It may change in the future.
 A process has: 
 - a priority (between 10 lowest and 80 highest). Using this priority, a process will be able to preempt other processes having lower priority and it will be managed by the process scheduler in the group of process with the same priority as shown in Figure *@SchedulerSimple*.
 - when suspended, a process has a suspendedContext which is a stack reification of the moment of the suspension.
-- when runnable, a reference to the scheduler list in which the process is suspended and waiting for execution. Such a list is also called the run queue.
+- when runnable, a reference to the scheduler list corresponding to its priority. Such a list is also called the run queue.
 
 
 !!! Process lifetime
@@ -611,10 +611,9 @@ deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 
 
 !!! Implementation 
-
 A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
-If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process can continue its operations. 
-On the contrary, the process is stored at the end of the pending list and we will scheduled when the previously pending process will be executed.
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
+On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
 
 Here is the implementation of ==signal== and ==wait== in Pharo.
 
@@ -683,6 +682,30 @@ A process has the following instance variables:
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
 - myList: the process scheduler list of processes to which the suspended process belongs to. This list is also called it run queue and it is only for suspended processes.
 
+You can do the little following tests to see the state of a process
+
+The first example opens an inspector in which you can see the state of the executed process. 
+
+[[[
+| pr |
+pr := [ 1 to: 1000000 do: [ :i | i traceCr ] ] forkAt: 10.
+pr inspect
+]]]
+It shows that while the process is executing the expression ==self suspendingList== is not nil,
+while that when the process terminates, its suspending list is nil.
+
+The second example shows that the process suspendedContext is nil when a process is executing. 
+[[[
+Processor activeProcess suspendedContext isNil.
+>>> true
+]]]
+
+Now a suspended process suspended context should not be nil, obviously.
+[[[
+([ 1 + 2 ] fork suspend ; suspendedContext) isNotNil
+]]]
+
+
 !!!! States
 
 We saw previously the different states a process can be in.
@@ -690,10 +713,10 @@ We also saw semaphores which suspend and resume suspended processes.
 We revisit the different states of a process by looking its interaction with the process scheduler and 
 semaphores as shown in *@ProcessorStateScheduler* : 
 - executing: it is currently executed.
-- runnable: it is one of the waiting queue of the scheduler.
-- waiting: it is suspendedn on a semaphore. It is the waiting list of a semaphore and it is not yet activable.
-- suspended: if this is the active process it is interrupted and can be reactivated later, else it is removed from the queue of the activable process that it belongs to. 
-- terminated: a process cannot be scheduled or activated anymore.
+- runnable: it is one of the run queue of the scheduler. The process scheduler  can execute it.
+- waiting: It is in the waiting list of a semaphore. The process scheduler does not know anything about it.
+- suspended: the process scheduler does not manage it (the process is not in its run queue) and the process is not in a semaphore waiting list.
+- terminated: a process cannot be scheduled or executed anymore.
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
