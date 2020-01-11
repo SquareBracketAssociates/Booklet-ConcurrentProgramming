@@ -1,0 +1,22 @@
+Oops!  I forgot to mention the other improvement.  That is the ability of
+the scheduler to add a process to the front of a particular run queue when
+a process is preempted, not to the back of its run queue as is specified
+(erroneously) in the original Smalltalk-80 specification.  Why is this
+erroneous?
+
+Smalltalk has a real-time preemptive-across-priorities,
+cooperative-within-priorities scheduling model.  No process at the same
+priority as the active process can preempt the active process.  Instead it
+must wait until the active process yields (which moves a process to the
+back of its run queue, allowing all other runnable processes at its
+priority a chance to run until it will run again), is suspended (on a
+semaphore or mutex), or explicitly suspends (via the suspend primitive).
+So when the original scheduler puts a process at the end of its run queue
+when a higher priority process preempts it that introduces an implicit
+yield, which violates the contract, a contract that can be used to
+implement cheapjack-free mutual exclusion between processes of the same
+priority.
+
+So the improvement, selected by a vm flag, is to cause preemption to add a
+process to the front of its run queue, maintaining the order and preserving
+the contract.

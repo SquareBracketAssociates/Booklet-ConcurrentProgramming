@@ -1,0 +1,110 @@
+
+
+
+
+Indeed.  Note that now we have two improvements supported by the VM over
+the blue book scheduler & synchronization primitives.
+
+First we have a native critical section which is not a queuing semaphore,
+but a queueing lock, which is in one of three states. It is a replacement
+for the old Mutex class.  It is not in Pharo yet but you can easily adapt
+the Squeak implementation (see below). Let me give a similar definition.
+
+A native critical section is a queue that can have an owner.  A new native
+critical section is empty and unowned.
+
+A process attempts to enter the native critical section via
+primitiveEnterCriticalSection. This occurs in one of three ways.
+- If the native critical section is unowned (which implies it is empty)
+then the process becomes the owner of the native critical section, the
+primitive answers false (meaning that it was previously unowned or owned by
+some other process), and the process proceeds.
+- if the native critical section is already owned by the process then the
+process remains the owner, the primitive answers true (meaning that it is
+already owned) and the process proceeds.
+- if the native critical section is already owned by some other process
+then the process is suspended and added to the end of the native critical
+section‘s queue, where it will wait until a primitiveExitCriticalSection
+resumes it and makes it owner.
+
+A process leaves a native critical section via
+primitiveExitCriticalSection.  It is the process's responsibility to use
+primitiveExitCriticalSection only when it entered via a
+primitiveEnterCriticalSection that answered false.  If the native critical
+section is empty then on executing primitiveExitCriticalSection it becomes
+unowned.  If the native critical section is not empty then on executing
+primitiveExitCriticalSection it becomes owned by the first process in its
+queue, the process is removed from the queue and is scheduled, proceeding
+from the primitiveEnterCriticalSection which caused it to block with
+primitiveEnterCriticalSection answering false.
+
+In addition a process may test and set its ownership of a native critical
+section without danger of blocking.  A process tests and sets its ownership
+of a native critical section via
+primitiveTestAndSetOwnershipOfCriticalSection.  On executing
+primitiveTestAndSetOwnershipOfCriticalSection, if the native critical
+section is unowned then the process becomes its owner and
+primitiveTestAndSetOwnershipOfCriticalSection answers false.  If the native
+critical section is owned  by the process
+primitiveTestAndSetOwnershipOfCriticalSection answers true.  If the native
+critical section is owned by some other process then
+primitiveTestAndSetOwnershipOfCriticalSection answers nil.
+
+Using primitiveExitCriticalSection and primitiveExitCriticalSection allows
+for efficient implemntation of rentrant critical sections:
+
+critical: aBlock
+"Evaluate aBlock protected by the receiver."
+<criticalSection>
+^self primitiveEnterCriticalSection
+ifTrue: [aBlock value]
+ifFalse: [aBlock ensure: [self primitiveExitCriticalSection]]
+
+Adding primitiveTestAndSetOwnershipOfCriticalSection makes it easy to
+implement and understand the following:
+
+critical: aBlock ifLocked: lockedBlock
+"Answer the evaluation of aBlock protected by the receiver.  If it is
+already in a critical
+section on behalf of some other process answer the evaluation of
+lockedBlock."
+<criticalSection>
+^self primitiveTestAndSetOwnershipOfCriticalSection
+ifNil: [lockedBlock value]
+ifNotNil:
+[:alreadyOwner|
+alreadyOwner
+ifTrue: [aBlock value]
+ifFalse: [aBlock ensure: [self primitiveExitCriticalSection]]]
+
+Once a process owns a critical section it can enter the criutical section
+as many times as it wants.  With the Semaphore it can only enter once per
+signal.  Of course we have constructed the class Mutex to operate similarly
+to a native critical section, but it is inefficient and not entirely safe
+(because we rely on implementation-defined behaviour to be able to assign
+the Mutex's owner without being preempted.
+
+In Squeak we already replaced the old Mutex with a Mutex built using the
+native crittical section reoresentation and primitives.  The file-in is
+attached.  An implementation note is that semaphores and native crtitical
+sections look very similar; they are both queues so their first and second
+and  instance variables are firstLink & lastLink, inherited from
+LinkedList.  A Semaphore's third inst var is excessSignals, its excess
+signals count.  A Mutex's third inst var is is owner.
+
+HTH
+
+P.S.
+This is an interesting exercise.  What we have done in specifying behavior
+here is focus on processes.  The documentation on the primitive methods in
+the system focus on the semaphore or native critical section.  What (I
+think) programmers want is to understand how the process behaves, not
+understand how the semaphore or native critical section works.  So
+documenting things from a process perspective is more useful.
+
+P.P.S.  If you compare the performance of the constructed Mutex against the
+native Mitex please report the results.
+
+P.P.P.S. We had tio step carefully to replace the old Mutex with the new
+one.  I can't remember her the details, but we handled it with Monticello
+load scripts and we can find the details if you need them

@@ -9,9 +9,10 @@ potential mistakes or any kind of feedback.
 
 You can simply contact us at stephane.ducasse@inria.fr
 
-24 December 2019.
+11 January 2020.
 
-Thanks DiagProf and Ben Coman for feedback.
+Thanks DiagProf. Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
+Than you again.
 
 !! Concurrent programming in Pharo
 @chaconcprog
@@ -259,6 +260,38 @@ The execution outputs:
 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 
 ]]]
 
+!!! Defining a little helper method
+
+Let us define a little trace utility method that will show the current process executing code. 
+It will help understanding what is happening.
+
+[[[
+Object >> crTracePriority
+	self crTrace: '[', Processor activePriority printString, ']', self printString
+]]]
+
+Now when we execute again the snippet above slightly modified:
+
+[[[
+[3 timesRepeat: [3 crTracePriority. ' ' trace ]] forkAt: 12.
+[3 timesRepeat: [2 crTracePriority. ' ' trace ]] forkAt: 13.
+[3 timesRepeat: [1 crTracePriority. ' ' trace ]] forkAt: 14.
+]]]
+
+We get the following output:
+
+[[[
+[14]1 
+[14]1 
+[14]1 
+[13]2 
+[13]2 
+[13]2 
+[12]3 
+[12]3 
+[12]3 
+]]]
+
 
 !!! Yielding the computation
 Now we should see how we express that a process can release its execution and let other processes of the same priority 
@@ -335,8 +368,6 @@ In the next chapter we explain semaphores since we will explain how the schedule
 
 
 
-
-
 !! Semaphores
 @chasemaphores
 
@@ -393,6 +424,7 @@ Each semaphore maintains a linked-list of suspended processes, and releases them
 Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a process, it dequeues processes in the order in which they waited on the semaphore.
 The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
 
+When a process sends a wait message to the semaphore, if the waiting list if empty then 
 
 !!! An example
 Before continuing let us play with semaphores.
@@ -440,15 +472,15 @@ The following example schedule three processes. It shows that thread can wait, d
 semaphore := Semaphore new. 
 p1 := [ 'Pharo ' crTrace ] fork. 
 
-p2 := ['is ' crTrace .
-semaphore wait.
-'super ' crTrace. 
-semaphore signal] fork.
+p2 := ['is ' crTrace.
+		semaphore wait.
+		' super ' crTrace. 
+		semaphore signal] fork.
 
 p3 := ['really ' crTrace. 
-semaphore signal.
-semaphore wait.
-'cool!' crTrace ] fork
+		semaphore signal.
+		semaphore wait.
+		'cool!' crTrace ] fork
 ]]]
 
 You should obtain ==Pharo is really super cool!==
@@ -458,13 +490,13 @@ Let us describe what is happening.
 - ==p1== prints =='Pharo'== and finishes. 
 - ==p2== prints =='is '== and waits.
 - ==p3== prints =='really '== and signals the semaphore and waits. It is added to the waiting list after the second process.
-- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super '== and signals the semaphore. 
+- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super '== and signals the semaphore.
 - The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
 
 
 !!!! A key question about signal
 
-Let us image that we have the following two processes and one semaphore. 
+Let us imagine that we have the following two processes and one semaphore. 
 
 [[[
 | semaphore p1 p2 |
@@ -476,20 +508,20 @@ p2 := [ semaphore signal.
 		'p2' crTrace ] fork.
 ]]]
 
-- The first process is waiting on the semaphore. As soon as the semaphore will be signalled, ==p1== is signal also the semaphore.
-- The second process is just signalling the semaphore and printing. 
+- The first process is scheduled and then waits on the semaphore. As soon as the semaphore will be signalled, ==p1== will print and terminate.
+- The second process is just signalling the semaphore, printing and then terminated. 
 
-Now the question is to understand what is the generated trace which is ==p2== then ==p1==. 
+Now the question is to understand why the generated trace which is:  
 
 [[[
 p2
 p1
 ]]]
 
-Let us explain why.
+Let us explain it.
 - ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
-- ==p2== is scheduled and it signals the semaphore. The semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended lists. ==p2== continues its execution.
-
+- ==p2== is scheduled and it signals the semaphore. During the execution of ==p2==, the semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended list of the process scheduler. ==p2== continues its execution and terminates.
+- ==p1== is then executed and terminates.
 
 Let us slightly change the example to show how priorities are involved during the signalling process.
 
@@ -512,9 +544,6 @@ p2
 
 As a conclusion when the semaphore is signalled, the first waiting process of the semaphore is removed from the semaphore list,
 and resumed following the preemption rules of the scheduler.
-
-
-
 
 
 
@@ -610,10 +639,14 @@ deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
 
-!!! Implementation 
+!!! Implementation: the language core perspective
 A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
 If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
 On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
+
+The fact that the semaphore waiting is a linked list has a clear impact on the semaphore semantics.
+While conceptually a semaphore has a list and a counter. At the implementation level, the class Semaphore inherits from the class LinkedList, so the waiting process list is 'directly' in the semaphore itself. Since Process inherits from Link (elements that can be added to linked list), they can be directly added to the semaphore without being wrapped by an element object.
+This is a simplification for the virtual machine.
 
 Here is the implementation of ==signal== and ==wait== in Pharo.
 
@@ -649,6 +682,81 @@ Semaphore >> wait
 		ifTrue: [excessSignals := excessSignals - 1]  
 		ifFalse: [self addLastLink: Processor activeProcess suspend]"
 ]]]
+
+
+!!! Implementation: the VM perspective
+
+For quick reference, here is some relevant VM code (the StackInterpreter code is a little simpler).
+
+As we saw previously two primitives are defined: one for ==wait== and one for ==signal==. 
+
+[[[
+StackInterpreter class >> initializePrimitiveTable 
+	...
+	"Control Primitives (80-89)"
+	(85 primitiveSignal)
+	(86 primitiveWait)
+	...
+]]]
+
+We see that the wait primitive will grab the active process and add it to the semaphore list and 
+
+
+[[[
+InterpreterPrimitives >> primitiveWait
+	| sema excessSignals activeProc |
+	sema := self stackTop.  "rcvr"
+	excessSignals := self fetchInteger: ExcessSignalsIndex ofObject: sema.
+	excessSignals > 0
+		ifTrue:
+			[self storeInteger: ExcessSignalsIndex ofObject: sema withValue: excessSignals - 1]
+		ifFalse:
+			[activeProc := self activeProcess.
+			self addLastLink: activeProc toList: sema.
+			self transferTo: self wakeHighestPriority]
+]]]
+
+[[[
+InterpreterPrimitives >> primitiveSignal [
+	"Synchronously signal the semaphore.
+	This may change the active process as a result."
+	
+	self synchronousSignal: self stackTop  "rcvr"
+]]]
+
+Here the signal primitive is incrementing the signal count if the semaphore list is empty, 
+Else, the first pending process is resumed. 
+
+[[[
+StackInterpreter >> synchronousSignal: aSemaphore
+	"Signal the given semaphore from within the interpreter.
+	Answer if the current process was preempted."
+
+	| excessSignals |
+	(self isEmptyList: aSemaphore) ifTrue:
+		["no process is waiting on this semaphore"
+		excessSignals := self fetchInteger: ExcessSignalsIndex ofObject: aSemaphore.
+		self storeInteger: ExcessSignalsIndex
+			ofObject: aSemaphore
+			withValue: excessSignals + 1.
+		^false].
+	objectMemory ensureSemaphoreUnforwardedThroughContext: aSemaphore.
+	^ self 
+		resume: (self removeFirstLinkOfList: aSemaphore)
+		preemptedYieldingIf: preemptionYields
+]]]
+
+We will explain the ==preemptionYields== used in the last line in a future chapter. 
+
+
+
+
+
+
+
+
+
+
 
 
 
