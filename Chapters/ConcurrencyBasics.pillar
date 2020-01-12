@@ -378,10 +378,11 @@ You will wait for the pen and once the pen is released, you will be able to acce
 Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen.
 When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
 Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
+In fact, this pen is a semaphore. 
 
-In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
-A great book proposes different synchronization challenges that are solves with Semaphare: The Little Book of Semaphores.
-It is clearly a nice further readings. 
+Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
+A great book proposes different synchronization challenges that are solves with Semaphore: ''The Little Book of Semaphores''.
+It is clearly a nice further readings.
 
 !!! Understanding semaphores
 
@@ -544,9 +545,6 @@ p2 := [
 
 
 
-
-
-
 !!! Prearmed semaphore
 
 A process wanted a resource protected by a semaphore does not have to be systematically put on the waiting list.
@@ -639,7 +637,7 @@ deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
 
-!!! Implementation: the language core perspective
+!!! Implementation: the language perspective
 A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
 If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
 On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
@@ -829,7 +827,8 @@ semaphores as shown in *@ProcessorStateScheduler* :
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 
-!!!! Looking at 
+!!! Looking at some core process primitives 
+
 [[[
 Process >> suspend
 	"Primitive. Stop the process that the receiver represents in such a way 
@@ -858,9 +857,25 @@ Process >> resume
 	^ self primitiveResume
 ]]]
 
+[[[
+BlockClosure >> fork
+	"Create and schedule a Process running the code in the receiver."
 
+	^ self newProcess resume
+]]]
 
+[[[
+BlockClosure >> newProcess
+	"Answer a Process running the code in the receiver. The process is not 
+	scheduled."
 
+	<primitive: 19>
+	^ Process
+		forContext:
+			[ self value.
+			Processor terminateActive ] asContext
+		priority: Processor activePriority
+]]]
 
 !!! Priorities
 A runnable process of a given priority is always executed before a process of an inferior pririoty.
