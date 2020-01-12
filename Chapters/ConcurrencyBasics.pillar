@@ -322,8 +322,6 @@ It means that if a process has an endless loop it will not release the execution
 except if it is preempted by a process of higher priority (see Chapter scheduler's principle )
 
 
-
-
 !!!! Using yield
 
 We modify the example to introduce an explicit return of control to the processor
@@ -341,9 +339,11 @@ We obtain the following trace showing that each process gave back the control to
 
 !!!! Summary
 
-Above we said that: 
-- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. They should explicitly give back the computation to give a chance to other pending processes to execute. 
-- A process (green thread) should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
+Let us revisit what we mentioned earlier.
+
+- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. In addition, we should pay attention since a process can be preempted by a process of higher prioriy, the semantics of the preemption (I.e., how the preempted process is rescheduled) have an impact on the process execution order. We will discuss this is in depth in following chapters.  
+- Processes should explicitly give back the computation to give a chance to other pending processes of the same priority to execute. The same remark as above works here too. Imagine a long process not yielding its execution, this process may be interrupted by a process of higher priority and depending on the semantics of the preemption this process may not be the one that will continue to be executed.
+- A process should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
 
 
 
@@ -351,9 +351,10 @@ Above we said that:
 
 The process creation API is composed of messages sent to blocks.
 
-- ==[ ] newProcess== creates a unscheduled process whose code is the receiver bloc. The priority is the one of the active process. 
+- ==[ ] newProcess== creates a unscheduled process whose code is the receiver bloc. The priority is the one of the active process.
 - ==[ ] newProcessWith: anArray==  same as above but pass arguments (defined by an array) to the block.
-- ==[ ] fork== creates a new scheduled process. It receives a ==resume== message so it is added to the queue corresponding to its priority. 
+- ==priority:== defines the priority of a process.
+- ==[ ] fork== creates a new scheduled process having the same priority than the process that spawns it. It receives a ==resume== message so it is added to the queue corresponding to its priority. 
 - ==[ ] forkAt:== same as above but with the specification of the priority. 
 - ==ProcessorScheduler yield== releases the execution from the current process and give a chance to processes of same priority to execute.
 
@@ -483,10 +484,9 @@ p3 := ['really ' crTrace.
 		'cool!' crTrace ] fork
 ]]]
 
-You should obtain ==Pharo is really super cool!==
+You should obtain ==Pharo is really super cool!==. 
 
 Let us describe what is happening. 
-
 - ==p1== prints =='Pharo'== and finishes. 
 - ==p2== prints =='is '== and waits.
 - ==p3== prints =='really '== and signals the semaphore and waits. It is added to the waiting list after the second process.
@@ -499,51 +499,51 @@ Let us describe what is happening.
 Let us imagine that we have the following two processes and one semaphore. 
 
 [[[
-| semaphore p1 p2 |
+| trace semaphore p1 p2 |
 semaphore := Semaphore new.
-p1 := [ semaphore wait.
-		'p1' crTrace ] fork.
-		
-p2 := [ semaphore signal.
-		'p2' crTrace ] fork.
+trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crLog ].
+p1 := [
+   trace value: 'Process 1a waits for signal on semaphore'. 
+   semaphore wait.
+   trace value: 'Process 1b received signal' ] forkAt: 20.
+p2 := [
+   trace value: 'Process 2a signals semaphore'. 
+   semaphore signal.
+   trace value: 'Process 2b continues' ] forkAt: 30.
 ]]]
 
-- The first process is scheduled and then waits on the semaphore. As soon as the semaphore will be signalled, ==p1== will print and terminate.
-- The second process is just signalling the semaphore, printing and then terminated. 
-
-Now the question is to understand why the generated trace which is:  
-
 [[[
-p2
-p1
+'@30 Process 1a waits for signal on semaphore'
+'@20 Process 2a signals semaphore'
+'@30 Process 1b received signal'
+'@20 Process 2b continues'
 ]]]
 
-Let us explain it.
-- ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
-- ==p2== is scheduled and it signals the semaphore. During the execution of ==p2==, the semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended list of the process scheduler. ==p2== continues its execution and terminates.
-- ==p1== is then executed and terminates.
-
-Let us slightly change the example to show how priorities are involved during the signalling process.
+with the priority order swapped...
 
 [[[
-| semaphore p1 p2 |
+| trace semaphore p1 p2 |
 semaphore := Semaphore new.
-p1 := [ semaphore wait.
-		'p1' crTrace ] forkAt: 30.
-
-p2 := [semaphore signal.
-	'p2' crTrace ] forkAt: 20.
+trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crLog ].
+p1 := [
+   trace value: 'Process 1a waits for signal on semaphore'. 
+   semaphore wait.
+   trace value: 'Process 1b received signal' ] forkAt: 30.
+p2 := [
+   trace value: 'Process 2a signals semaphore'. 
+   semaphore signal.
+   trace value: 'Process 2b continues' ] forkAt: 20.
 ]]]
-
-It outputs: 
 
 [[[
-p1 
-p2
+'@30 Process 2a signals semaphore'
+'@30 Process 2b continues'
+'@20 Process 1a waits for signal on semaphore'
+'@20 Process 1b received signal'
 ]]]
 
-As a conclusion when the semaphore is signalled, the first waiting process of the semaphore is removed from the semaphore list,
-and resumed following the preemption rules of the scheduler.
+
+
 
 
 
@@ -848,7 +848,72 @@ is executed last and yield its computation, the processes of lower priority were
 the process of higher priority got terminated.
 
 
-@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo legacy, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+
+
+!!! What about processes having the same priority 
+
+When we execute a snippet as the following one, we should always consider the following points: 
+- first such processes are executed with the same priority than the UI thread,
+- their execution could be preempted by  processes of higher priority and the preemption semantics may change the order.
+
+[[[
+| semaphore p1 p2 |
+semaphore := Semaphore new.
+p1 := [ semaphore wait.
+		'p1' crTrace ] fork.
+		
+p2 := [ semaphore signal.
+		'p2' crTrace ] fork.
+]]]
+
+- The first process is scheduled and then waits on the semaphore. As soon as the semaphore will be signalled, ==p1== will print and terminate.
+- The second process is just signalling the semaphore, printing and then terminated. 
+
+Now the question is to understand why the generated trace which is:  
+
+[[[
+p2
+p1
+]]]
+
+Let us explain it.
+- ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
+- ==p2== is scheduled and it signals the semaphore. During the execution of ==p2==, the semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended list of the process scheduler. ==p2== continues its execution and terminates.
+- ==p1== is then executed and terminates.
+
+This is true when no process of higher priority preempts the execution. In such a case, the semantics of the preemption may change the order.
+In particular, if the preemption continues the execution of the preempted process or rescheduled it later.
+
+
+Let us slightly change the example to show how priorities are involved during the signalling process.
+
+[[[
+| semaphore p1 p2 |
+semaphore := Semaphore new.
+p1 := [ semaphore wait.
+		'p1' crTrace ] forkAt: 30.
+
+p2 := [semaphore signal.
+	'p2' crTrace ] forkAt: 20.
+]]]
+
+It outputs: 
+
+[[[
+p1 
+p2
+]]]
+
+As a conclusion when the semaphore is signalled, the first waiting process of the semaphore is removed from the semaphore list,
+and resumed following the preemption rules of the scheduler.
+
+Stef revisit.
+In fact the message ==signal==  does not transfer execution unless the waiting process that received the signal has a higher priority.
+Within the same priority, it just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
+
+
+
 
 !!! Understanding yield
 We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
@@ -903,6 +968,13 @@ The ==yield== method does the following:
 # allows the newly forked process to run, and
 # the signal in ==semaphore signal== removes the process from the semaphore and adds it to the back of the run queue, so
 # all processes at the same priority level as the process that called ==yield== have run.
+
+
+
+==yield== only facilitates other processes at the same priority getting a chance to run.
+It doesn't put the current process to sleep, it just moves the process to the back of its priority run queue. 
+It gets to run again before any lower priority process gets a chance to run.
+Yielding will never allow a lower priority process to run.
 
 
 !!!! About the primitive in yield method
