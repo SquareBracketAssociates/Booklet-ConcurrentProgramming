@@ -320,7 +320,7 @@ What you should see is that the message ==yield== was sent, but the scheduler re
 did not finish.
 This example shows that yielding will never allow a process of lower priority to run.
 
-@@important yielding will never allow a lower-priority-process to run.  
+@@note Yielding will never allow a lower-priority-process to run.  
 
 
 !!!! Between processes of the same priority
