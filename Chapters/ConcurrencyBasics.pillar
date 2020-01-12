@@ -817,7 +817,7 @@ Now a suspended process suspended context should not be nil, obviously.
 !!!! States
 
 We saw previously the different states a process can be in.
-We also saw semaphores which suspend and resume suspended processes. 
+We also saw semaphores which suspend and resume suspended processes.
 We revisit the different states of a process by looking its interaction with the process scheduler and 
 semaphores as shown in *@ProcessorStateScheduler* : 
 - executing: it is currently executed.
@@ -827,6 +827,40 @@ semaphores as shown in *@ProcessorStateScheduler* :
 - terminated: a process cannot be scheduled or executed anymore.
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
+
+
+!!!! Looking at 
+[[[
+Process >> suspend
+	"Primitive. Stop the process that the receiver represents in such a way 
+	that it can be restarted at a later time (by sending the receiver the 
+	message resume). If the receiver represents the activeProcess, suspend it. 
+	Otherwise remove the receiver from the list of waiting processes.
+	The return value of this method is the list the receiver was previously on (if any)."
+
+	<primitive: 88>
+	| oldList |
+	myList ifNil: [ ^ nil ].
+	oldList := myList.
+	myList := nil.
+	oldList remove: self ifAbsent: [  ].
+	^ oldList
+]]]
+
+[[[
+Process >> resume
+	"Allow the process that the receiver represents to continue. Put 
+	the receiver in line to become the activeProcess. Check for a nil 
+	suspendedContext, which indicates a previously terminated Process that 
+	would cause a vm crash if the resume attempt were permitted"
+
+	suspendedContext ifNil: [ ^ self primitiveFailed ].
+	^ self primitiveResume
+]]]
+
+
+
+
 
 !!! Priorities
 A runnable process of a given priority is always executed before a process of an inferior pririoty.
@@ -1022,101 +1056,6 @@ to execute.
 
 
 
-
-!!!Delay
-The class ==Delay== is a central class of Pharo kernel. 
-Typical needs for using delays are 
-- repeat an action every x milliseconds,
-- wait a given amount of time before executing an action. 
-
-In case you need to pause execution for some time, you can use ""Delay"".
-
-Delays can be instantiated and set up by sending ==forSeconds:== or ==forMilliseconds:== to the class ==Delay== and executed by sending it ==wait== message.
-
-For example:
-[[[
-| delay |
-delay := Delay forSeconds: 3.
-[ 1 to: 10 do: [:i |
-  Transcript show: i printString ; cr.
-  delay wait ] ] fork
-]]]
-will print a number every 3 seconds.
-
-Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
-
-!!! Example
-The following snippet schedules two processes each of which will display a different message with a  different rate.
-
-[[[
-[ 10 timesRepeat: [ 
-	'ping' crTrace. 
-	(Delay forMilliseconds: 300) wait ] 
-	] forkAt: Processor userBackgroundPriority.
-	  
-[ 10 timesRepeat: [ 
-	'PONG' crTrace. 
-	(Delay forMilliseconds: 100) wait]
-	] forkAt: Processor userBackgroundPriority.
-]]]
-
-It produces: 
-
-[[[
-ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  ping  ping  ping  ping  ping  ping 
-]]]
-
-!!! Implementation
-
-The class ==Delay== is complex because when a Pharo image is saved and restarted, running delays should be adapted. 
-A delay in progress when an image snapshot is suspended and resumed when the snapshot is re-started.
-i.e. from the image perspective of timing, the image snapshot never happened.
-We will not cover this. 
-
-[[[
-Delay class >> forMilliseconds: aNumber
-	"Return a new Delay for the given number of milliseconds. 
-	Sending 'wait' to this Delay will cause the sender's process to be 
-	suspended for approximately that length of time."
-
-	^ self new setDelay: aNumber forSemaphore: Semaphore new
-]]]
-
-[[[
-Delay >> setDelay: milliseconds forSemaphore: aSemaphore
-	"Private! Initialize this delay to signal the given semaphore after the given number of milliseconds."
-
-	millisecondDelayDuration := milliseconds asInteger.
-	millisecondDelayDuration < 0 ifTrue: [self error: 'delay times cannot be negative'].
-	delaySemaphore := aSemaphore.
-	beingWaitedOn := false.
-]]]
-
-A delay has 
-- a boolean (==beingWaitedOn==) expressing whether users sent it the message ==wait==.
-- a semaphore that is used by the delay scheduler to make sure that the delay will be sleeping and waken up on time. 
-
-For example the message ==wait== of the class ==Delay== schedules the delay, and make the delay waiting.
-[[[
-Delay >> wait
-	"Schedule this Delay, then wait on its semaphore. The current process will be suspended for the amount of time specified when this Delay was created."
-
-	self schedule.
-	[ delaySemaphore wait ] ifCurtailed: [ self unschedule ]
-]]]
-
-The delay scheduler will then signal this semaphore when needed sending the private message 
-
-[[[
-Delay >> timingPrioritySignalExpired
-	"The delay time has elapsed; signal the waiting process."
-
-	beingWaitedOn := false.
-	delaySemaphore signal.
-]]]
-
-
-
 !!! About processPreemption and VM
 
 Now we will discuss a bit the settings of the VM regarding process preemption: What exactly happens when a process is 
@@ -1227,10 +1166,6 @@ and in particular the preemption of the current running process by a process of 
 
 
 
-
-
-
-
 !! About synchronisation
 
 When multiple threads share and modify the same resources we can easily end up in 
@@ -1299,9 +1234,10 @@ as we see present in the following section.
 
 !!! Using a Mutex
 
-A Mutex (MUTual EXclusion) is an object to protect a share resources. 
-A mutex can be used when two or more processes need to access a shared resource concurrently. 
-A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use. Waiting processes are granted access to the mutex in the order the access was requested.
+A Mutex (MUTual EXclusion) is an object to protect a share resources.
+A mutex can be used when two or more processes need to access a shared resource concurrently.
+A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use.
+Waiting processes are granted access to the mutex in the order the access was requested.
 An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
 
 In the following example the expressions ==Processor yield== ensures that thread of the same priority can get a chance to be executed. 
@@ -1341,6 +1277,7 @@ mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
 The same code gets blocked on a deadlock with a semaphore.
+A Mutex and a semaphore are not interchangeable from this perspective.
 
 !!! Mutex implementation
 
@@ -1418,11 +1355,115 @@ All processes waiting for the default event are woken up.
 
 !!! (draft) SharedQueue with a monitor
 
+!! About Delay
+
+The class ==Delay== is a central class of Pharo kernel. 
+Typical needs for using delays are:
+- repeat an action every x milliseconds,
+- wait a given amount of time before executing an action. 
+
+This class requires 
+
+!!! The class Delay
+
+
+In case you need to pause execution for some time, you can use ""Delay"".
+
+Delays can be instantiated and set up by sending ==forSeconds:== or ==forMilliseconds:== to the class ==Delay== and executed by sending it ==wait== message.
+
+For example:
+[[[
+| delay |
+delay := Delay forSeconds: 3.
+[ 1 to: 10 do: [:i |
+  Transcript show: i printString ; cr.
+  delay wait ] ] fork
+]]]
+will print a number every 3 seconds.
+
+Delays suspend the execution of a thread during a precise duration. The thread is then in suspended state.
+
+!!! Example
+The following snippet schedules two processes each of which will display a different message with a  different rate.
+
+[[[
+[ 10 timesRepeat: [ 
+	'ping' crTrace. 
+	(Delay forMilliseconds: 300) wait ] 
+	] forkAt: Processor userBackgroundPriority.
+	  
+[ 10 timesRepeat: [ 
+	'PONG' crTrace. 
+	(Delay forMilliseconds: 100) wait]
+	] forkAt: Processor userBackgroundPriority.
+]]]
+
+It produces: 
+
+[[[
+ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  PONG  PONG  ping  PONG  ping  ping  ping  ping  ping  ping 
+]]]
+
+
+!!! Delay specific scheduler
+
+
+
+!!! Implementation
+The class ==Delay== is complex because when a Pharo image is saved and restarted, running delays should be adapted. 
+A delay in progress when an image snapshots is suspended and resumed when the snapshot is re-started.
+i.e., from the image perspective of timing, the image snapshot never happened.
+We will not cover this. 
+
+[[[
+Delay class >> forMilliseconds: aNumber
+	"Return a new Delay for the given number of milliseconds. 
+	Sending 'wait' to this Delay will cause the sender's process to be 
+	suspended for approximately that length of time."
+
+	^ self new setDelay: aNumber forSemaphore: Semaphore new
+]]]
+
+[[[
+Delay >> setDelay: milliseconds forSemaphore: aSemaphore
+	"Private! Initialize this delay to signal the given semaphore after the given number of milliseconds."
+
+	millisecondDelayDuration := milliseconds asInteger.
+	millisecondDelayDuration < 0 ifTrue: [self error: 'delay times cannot be negative'].
+	delaySemaphore := aSemaphore.
+	beingWaitedOn := false.
+]]]
+
+A delay has 
+- a boolean (==beingWaitedOn==) expressing whether users sent it the message ==wait==.
+- a semaphore that is used by the delay scheduler to make sure that the delay will be sleeping and waken up on time. 
+
+For example the message ==wait== of the class ==Delay== schedules the delay, and make the delay waiting.
+[[[
+Delay >> wait
+	"Schedule this Delay, then wait on its semaphore. The current process will be suspended for the amount of time specified when this Delay was created."
+
+	self schedule.
+	[ delaySemaphore wait ] ifCurtailed: [ self unschedule ]
+]]]
+
+The delay scheduler will then signal this semaphore when needed sending the private message ==timingPrioritySignalExpired==.
+
+[[[
+Delay >> timingPrioritySignalExpired
+	"The delay time has elapsed; signal the waiting process."
+
+	beingWaitedOn := false.
+	delaySemaphore signal.
+]]]
+
+!!! Conclusion
+
 
 
 !! Some examples of semaphores at work
-Semaphores a low-level concurrency abstractions. 
-In this chapter, we present some abstractions built on top of semaphores: Promise, SharedQueue, and Rendez-vous.
+Semaphores are low-level concurrency abstractions. 
+In this chapter, we present some abstractions built on top of semaphores: ==Promise==, ==SharedQueue==, and discuss Rendez-vous.
 
 !!! Promise
 Sometimes we have a computation that can take times. We would like to have the possibility not be blocked waiting for it especially if we do not need immediately. 
@@ -1447,11 +1488,11 @@ of the promise (not on promise creation).
 The following snippet shows that even if the promise contains an endless loop, it is only looping forever when the promise value is requested - the variable ==executed== is true and the program loops forever.
 
 [[[
-| executed promise |
-executed := false. 
-promise := [ endless loops ] promise. 
-executed := true. 
-promise value
+	| executed promise |
+	executed := false. 
+	promise := [ endless loops ] promise. 
+	executed := true. 
+	promise value
 ]]]
 
 !!! Promise implementation
@@ -1581,13 +1622,14 @@ Promise >> value: resultValue
 
 
 
-!!! [to be translated] ShareQueue: a Semaphore Example
+!!! ShareQueue: a nice semaphore example
+A ==SharedQueue== is a FIFO (first in first out) structure. It uses semaphores to protect from concurrent accesses. 
+A ==SharedQueue== is often used when a structure can be used by multiple processes that may access the same structure. 
 
-@@todo translate stef! 
+ The definition in Pharo is different because based on ==Monitor==. A monitor is a more advanced
+abstraction to manage concurrency situations. 
 
-Une SharedQueue, ou file partagée, est une structure FIFO (First In First Out, le premier élément entré est le premier sorti), dotée de sémaphores de protection contre les accès concurrents. Cette structure est utilisée dans les situations où plusieurs processus fonctionnent simultanément et sont susceptibles d’accéder à cette même structure.
-Sa définition est la suivante :
-
+Let us look at a possible definitionis the following one.
 
 [[[
 Object subclass: #SharedQueue
