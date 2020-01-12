@@ -380,7 +380,7 @@ When the current writer does not need the pen anymore, he will say it and the ne
 Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
 
 In fact, our pen is a semaphore. Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
-A great book proposes different synchronization challenges that are solves with Semapharo: The Little Book of Semaphores.
+A great book proposes different synchronization challenges that are solves with Semaphare: The Little Book of Semaphores.
 It is clearly a nice further readings. 
 
 !!! Understanding semaphores
@@ -597,7 +597,7 @@ This is important to make sure that on certain concurrency synchronisation, all 
 
 We can ask a semaphore whether if it is prearmed using the message ==isSignaled==. 
 [[[
-sema := Semapharo new.
+sema := Semaphore new.
 sema signal.
 sema isSignaled
 >>> true
@@ -1105,7 +1105,7 @@ Delay >> wait
 	[ delaySemaphore wait ] ifCurtailed: [ self unschedule ]
 ]]]
 
-The delay scheduler will then signal this semapharo when needed sending the private message 
+The delay scheduler will then signal this semaphore when needed sending the private message 
 
 [[[
 Delay >> timingPrioritySignalExpired
