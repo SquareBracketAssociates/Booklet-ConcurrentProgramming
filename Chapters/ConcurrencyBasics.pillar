@@ -12,7 +12,7 @@ You can simply contact us at stephane.ducasse@inria.fr
 11 January 2020.
 
 Thanks DiagProf. Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
-Than you again.
+Than you again. Special thanks to DiagProf for a patience fixing typos. Special thanks to Ben Coman for the great examples.
 
 !! Concurrent programming in Pharo
 @chaconcprog
@@ -249,55 +249,81 @@ There are simple rules that manages process scheduling. We will refine the rules
 
 
 [[[
-[5 timesRepeat: [3 trace. ' ' trace ]] forkAt: 12.
-[5 timesRepeat: [2 trace. ' ' trace ]] forkAt: 13.
-[5 timesRepeat: [1 trace. ' ' trace ]] forkAt: 14.
+[3 timesRepeat: [3 trace. ' ' trace ]] forkAt: 12.
+[3 timesRepeat: [2 trace. ' ' trace ]] forkAt: 13.
+[3 timesRepeat: [1 trace. ' ' trace ]] forkAt: 14.
 ]]]
 
 The execution outputs: 
 
 [[[
-1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 
+1 1 1 2 2 2 3 3 3
 ]]]
 
 !!! Defining a little helper method
 
 Let us define a little trace utility method that will show the current process executing code. 
-It will help understanding what is happening.
-
-Todo: revisit may be use a block instead.
-[[[
-Object >> crTracePriority
-	self crTrace: '[', Processor activePriority printString, ']', self printString
-]]]
-
+It will help understanding what is happening. 
 Now when we execute again the snippet above slightly modified:
 
 [[[
-[3 timesRepeat: [3 crTracePriority. ' ' trace ]] forkAt: 12.
-[3 timesRepeat: [2 crTracePriority. ' ' trace ]] forkAt: 13.
-[3 timesRepeat: [1 crTracePriority. ' ' trace ]] forkAt: 14.
+	| trace |
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	[3 timesRepeat: [ trace value: 3 ]] forkAt: 12.
+	[3 timesRepeat: [ trace value: 2 ]] forkAt: 13.
+	[3 timesRepeat: [ trace value: 1 ]] forkAt: 14.
 ]]]
 
 We get the following output:
 
 [[[
-[14]1 
-[14]1 
-[14]1 
-[13]2 
-[13]2 
-[13]2 
-[12]3 
-[12]3 
-[12]3 
+@14 1
+@14 1
+@14 1
+@13 2
+@13 2
+@13 2
+@12 3
+@12 3
+@12 3
 ]]]
 
 
 !!! Yielding the computation
 Now we should see how we express that a process can release its execution and let other processes of the same priority 
 perform their tasks. 
-Let us start with a small example.
+Let us start with a small example based on the previous example. 
+
+[[[
+	| trace |
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	[3 timesRepeat: [ trace value: 3. Processor yield ]] forkAt: 12.
+	[3 timesRepeat: [ trace value: 2. Processor yield ]] forkAt: 13.
+	[3 timesRepeat: [ trace value: 1. Processor yield ]] forkAt: 14.
+]]]
+
+Here the result is the same
+
+[[[
+@14 1
+@14 1
+@14 1
+@13 2
+@13 2
+@13 2
+@12 3
+@12 3
+@12 3
+]]]
+
+What you should see is that the message ==yield== was sent, but the scheduler rescheduled the process of the highest priority that 
+did not finish.
+This example shows that yielding will never allow a process of lower priority to run.
+
+@@important yielding will never allow a lower-priority-process to run.  
+
+
+!!!! Between processes of the same priority
 We create two processes of the same priority that perform a loop displaying numbers.
 
 [[[
@@ -337,6 +363,8 @@ We obtain the following trace showing that each process gave back the control to
 [[[
 1 11 2 12 3 13 4 14 5 15 6 16 7 17 8 18 9 19 10 20 
 ]]]
+
+We will come back to yield in future chapters.
 
 !!!! Summary
 
@@ -474,14 +502,14 @@ The following example schedule three processes. It shows that thread can wait, d
 [[[
 | semaphore p1 p2 p3 |
 semaphore := Semaphore new. 
-p1 := [ 'Pharo ' crTrace ] fork. 
+p1 := [ 'Pharo' crTrace ] fork. 
 
-p2 := ['is ' crTrace.
+p2 := ['is' crTrace.
 		semaphore wait.
-		' super ' crTrace. 
+		'super' crTrace. 
 		semaphore signal] fork.
 
-p3 := ['really ' crTrace. 
+p3 := ['really' crTrace. 
 		semaphore signal.
 		semaphore wait.
 		'cool!' crTrace ] fork
@@ -491,10 +519,29 @@ You should obtain ==Pharo is really super cool!==.
 
 Let us describe what is happening. 
 - ==p1== prints =='Pharo'== and finishes. 
-- ==p2== prints =='is '== and waits.
-- ==p3== prints =='really '== and signals the semaphore and waits. It is added to the waiting list after the second process.
-- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super '== and signals the semaphore.
+- ==p2== prints =='is'== and waits.
+- ==p3== prints =='really'== and signals the semaphore and waits. It is added to the waiting list after the second process.
+- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super'== and signals the semaphore.
 - The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
+
+Now we really suggest to play with different priorities and predict the behavior.
+For example as follows:
+
+[[[
+	| semaphore p1 p2 p3 |
+	semaphore := Semaphore new. 
+	p1 := [ 'Pharo' crTrace ] forkAt: 30. 
+
+	p2 := ['is' crTrace.
+			semaphore wait.
+			'super' crTrace. 
+			semaphore signal] forkAt: 35.
+
+	p3 := ['really' crTrace. 
+			semaphore signal.
+			semaphore wait.
+			'cool!' crTrace ] forkAt: 30
+]]]
 
 
 
@@ -628,17 +675,17 @@ It evaluates aBlock only if the receiver is not currently in the process of runn
 If the receiver is, evaluate aBlock after the other ==critical:== message is finished.
 To use a critical, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==
 
-!!!! Example.
+%!!!! Example.
 
-[[[
-	Here I need a simple race condition 
-
-]]]
+%[[[%
+%	Here I need a simple race condition 
+%
+%]]]
  
-[[[
-	Here I need a simple mutual exclusion
-
-]]]
+%[[[
+%	Here I need a simple mutual exclusion
+%
+%]]]
  
 !!!! Deadlocking semaphores.
 Pay attention that a semaphore critical section cannot be nested.
@@ -767,16 +814,6 @@ We will explain the ==preemptionYields== used in the last line in a future chapt
 
 
 
-
-
-
-
-
-
-
-
-
-
 !!! Conclusion
 
 Semaphores are the lower synchronisation mechanisms. 
@@ -900,21 +937,17 @@ BlockClosure >> newProcess
 
 !!! Priorities
 A runnable process of a given priority is always executed before a process of an inferior pririoty.
-Here a simple examples showing that priorities are taken into account. 
+Remember the examples of previous chapter:
 
 [[[
-[5 timesRepeat: [3 trace. ' ' trace. Processor yield]] forkAt: 12.
-[5 timesRepeat: [2 trace. ' ' trace. Processor yield]] forkAt: 13.
-[5 timesRepeat: [1 trace. ' ' trace. Processor yield]] forkAt: 14.
+	| trace |
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	[3 timesRepeat: [ trace value: 3. Processor yield ]] forkAt: 12.
+	[3 timesRepeat: [ trace value: 2. Processor yield ]] forkAt: 13.
+	[3 timesRepeat: [ trace value: 1. Processor yield ]] forkAt: 14.
 ]]]
 
-We get the following outputs:
-[[[
-1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 
-]]]
-
-It  shows that even if a given showing that even if the third process
-is executed last and yield its computation, the processes of lower priority were not scheduled before 
+It shows that even if processes yield, the processes of lower priority were not scheduled before 
 the process of higher priority got terminated.
 
 
@@ -993,13 +1026,75 @@ with the current semantics may not block with the new semantics.
 
 
 
-!!! What about processes having the same priority 
+!!! Considering UI Thread 
 
 Stef revisit.
 In fact the message ==signal==  does not transfer execution unless the waiting process that received the signal has a higher priority.
 Within the same priority, it just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
 
 
+TO EXPLAIN.
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
+	p1 := [
+		trace value: 'Process 1a waits for signal on semaphore'. 
+		semaphore wait.
+		trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+		trace value: 'Process 2a signals semaphore'. 
+		semaphore signal.
+		trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+	trace value: 'Original process pre-yield'.
+	Processor yield.
+	trace value: 'Original process post-yield'. 
+]]]
+
+
+TO EXPLAIN.
+
+[[[
+	@40 Original process pre-yield
+	@40 Original process post-yield
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a signals semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+]]]
+
+TO EXPLAIN.
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
+	p1 := [
+		trace value: 'Process 1a waits for signal on semaphore'. 
+		semaphore wait.
+		trace value: 'Process 1b received signal' ] forkAt: 30.
+	p2 := [
+		trace value: 'Process 2a signals semaphore'. 
+		semaphore signal.
+		trace value: 'Process 2b continues' ] forkAt: 20.
+	
+	trace value: 'Original process pre-delay'.
+	1 milliSecond wait.
+	trace value: 'Original process post-delay'.   
+]]]
+
+[[[
+	@40 Original process pre-yield
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a signals semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+	@40 Original process post-yield
+]]]
+
+Yielding will never allow a lower-priority-process to run.  
+For a lower-priority process to run, the current process needs to suspend itself (with the way to get woken up later) rather than yield.
 
 
 !!! Understanding yield
