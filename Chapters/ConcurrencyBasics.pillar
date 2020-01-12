@@ -265,6 +265,7 @@ The execution outputs:
 Let us define a little trace utility method that will show the current process executing code. 
 It will help understanding what is happening.
 
+Todo: revisit may be use a block instead.
 [[[
 Object >> crTracePriority
 	self crTrace: '[', Processor activePriority printString, ']', self printString
@@ -462,11 +463,12 @@ When a semaphore receives a ==wait== message, it will stop the process sending t
 
 Now in the inspector on the semaphore execute ==self signal==.
 This schedules one of the waiting process and one of the job will finish its task.
-If we do not send a new signal message to the semaphore, the second waiting process will never be scheduled.
+If we do not send a new ==signal== message to the semaphore, the second waiting process will never be scheduled.
 
 
 !!! wait and signal interplay
 
+Todo: Revisit here
 The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
 
 [[[
@@ -495,55 +497,68 @@ Let us describe what is happening.
 - The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
 
 
-!!!! A key question about signal
 
-Let us imagine that we have the following two processes and one semaphore. 
-
-[[[
-| trace semaphore p1 p2 |
-semaphore := Semaphore new.
-trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crLog ].
-p1 := [
-   trace value: 'Process 1a waits for signal on semaphore'. 
-   semaphore wait.
-   trace value: 'Process 1b received signal' ] forkAt: 20.
-p2 := [
-   trace value: 'Process 2a signals semaphore'. 
-   semaphore signal.
-   trace value: 'Process 2b continues' ] forkAt: 30.
-]]]
+!!! A key question about signal
+Let us imagine that we have the following two processes of different priority and one semaphore.
+We would like to show the influence of ==signal== on the scheduling of such processes.
 
 [[[
-'@30 Process 1a waits for signal on semaphore'
-'@20 Process 2a signals semaphore'
-'@30 Process 1b received signal'
-'@20 Process 2b continues'
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 20.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 30.
 ]]]
 
-with the priority order swapped...
+Here the higher priority process (==p2==) produces a trace, signals the semaphore and finishes. 
+Then the lower priority process produces a trace, wait and since the semaphore has been signalled, it executes and terminates. 
 
 [[[
-| trace semaphore p1 p2 |
-semaphore := Semaphore new.
-trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crLog ].
-p1 := [
-   trace value: 'Process 1a waits for signal on semaphore'. 
-   semaphore wait.
-   trace value: 'Process 1b received signal' ] forkAt: 30.
-p2 := [
-   trace value: 'Process 2a signals semaphore'. 
-   semaphore signal.
-   trace value: 'Process 2b continues' ] forkAt: 20.
+	@30 Process 2a up to signalling semaphore
+	@30 Process 2b continues and terminates
+	@20 Process 1a waits for signal on semaphore
+	@20 Process 1b received signal and terminates
 ]]]
+
+Now let us swap the prioriy.
 
 [[[
-'@30 Process 2a signals semaphore'
-'@30 Process 2b continues'
-'@20 Process 1a waits for signal on semaphore'
-'@20 Process 1b received signal'
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+]]]
+
+Here the higher priority process (==p1==) produces trace and wait on the semaphore. 
+==p2== is then executed: it produces a trace, then signals the semaphore. 
+This signal reschedule ==p1== and since it is of higher priority, it is executed first preempting (==p2==) and it terminates. 
+Then ==p2== terminates.
+
+[[[
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a up to signalling semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
 ]]]
 
 
+There is subtle point that the second example does not illustrate but that is worth that we discuss: while the lowest priority process signaled the semaphore
+it gets preempted by the higher priority ones. This raises the question of what it the process to be rescheduled after preemption. 
+The example does not show it because we got only one process of priority 20. 
+We will go over this point in the next Chapter.
 
 !!! Prearmed semaphore
 
@@ -626,15 +641,19 @@ To use a critical, first the semaphore should be prearmed using the class creati
 ]]]
  
 !!!! Deadlocking semaphores.
-Pay attention that a semaphore critical section cannot be nested. 
-A semaphore gets blocked (waiting) when being called from a critical section its protects. 
-Mutexes (also named RecursionLock) solves this problem. 
+Pay attention that a semaphore critical section cannot be nested.
+A semaphore gets blocked (waiting) when being called from a critical section its protects.
+Mutexes (also named RecursionLock) solves this problem.
+This is why a Mutex and a semaphore are not interchangeable.
 
 [[[
 | deadlockSem |
 deadlockSem := Semaphore new. 
 deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
+
+
+
 
 
 !!! Implementation: the language perspective
@@ -829,6 +848,8 @@ semaphores as shown in *@ProcessorStateScheduler* :
 
 !!! Looking at some core process primitives 
 
+
+Todo: More here
 [[[
 Process >> suspend
 	"Primitive. Stop the process that the receiver represents in such a way 
@@ -899,63 +920,80 @@ the process of higher priority got terminated.
 
 @@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
 
+!!! Getting back to signal
+
+In the previous chapter we presented this example:
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+]]]
+
+Here the higher priority process (==p1==) produces trace and wait on the semaphore. 
+==p2== is then executed: it produces a trace, then signals the semaphore. 
+This signal reschedule ==p1== and since it is of higher priority, it is executed first preempting (==p2==) and it terminates. 
+Then ==p2== terminates.
+
+[[[
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a up to signalling semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+]]]
+
+
+Now we add a second process of lower priority to understand what may happen on preemption. 
+
+[[[
+	| trace semaphore p1 p2 p3 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+   p3 := [
+	   trace value: 'Process 3a works and terminates'. 
+		] forkAt: 20.
+]]]
+
+Here is the produced trace. What is interesting to see is that ==p2== is preempted by ==p1== as soon as it is signalling the semaphore.
+Then ==p1== terminates and the scheduler does not schedule ==p2== but ==p3==. 
+
+[[[
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a up to signalling semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 3a works and terminates
+	@20 Process 2b continues and terminates
+]]]
+
+This behavior is really surprising. 
+In fact, in old version of the virtual machine the preemption was implementing this behavior: it was acting as if an impllcit yield 
+was happening, moving the current process to the end of its run queue. 
+The VM supports another semantics where the preempted process is executed first then the other processes in the run queue. 
+So far Pharo did not use this new semantics. 
+It does not mean it will not because it is super easy to use it. 
+The challenge is that all the process logic of the systeme should be reassessed to understand if some process that are not blocking 
+with the current semantics may not block with the new semantics. 
+
+
+
 
 !!! What about processes having the same priority 
-
-When we execute a snippet as the following one, we should always consider the following points: 
-- first such processes are executed with the same priority than the UI thread,
-- their execution could be preempted by  processes of higher priority and the preemption semantics may change the order.
-
-[[[
-| semaphore p1 p2 |
-semaphore := Semaphore new.
-p1 := [ semaphore wait.
-		'p1' crTrace ] fork.
-		
-p2 := [ semaphore signal.
-		'p2' crTrace ] fork.
-]]]
-
-- The first process is scheduled and then waits on the semaphore. As soon as the semaphore will be signalled, ==p1== will print and terminate.
-- The second process is just signalling the semaphore, printing and then terminated. 
-
-Now the question is to understand why the generated trace which is:  
-
-[[[
-p2
-p1
-]]]
-
-Let us explain it.
-- ==p1== is scheduled and its execution starts to wait on the semaphore, so it is removed from the run queue of the scheduler and added to the waiting list of the semaphore.
-- ==p2== is scheduled and it signals the semaphore. During the execution of ==p2==, the semaphore takes the first waiting process (==p1==) and reschedules it by adding it to the end of the suspended list of the process scheduler. ==p2== continues its execution and terminates.
-- ==p1== is then executed and terminates.
-
-This is true when no process of higher priority preempts the execution. In such a case, the semantics of the preemption may change the order.
-In particular, if the preemption continues the execution of the preempted process or rescheduled it later.
-
-
-Let us slightly change the example to show how priorities are involved during the signalling process.
-
-[[[
-| semaphore p1 p2 |
-semaphore := Semaphore new.
-p1 := [ semaphore wait.
-		'p1' crTrace ] forkAt: 30.
-
-p2 := [semaphore signal.
-	'p2' crTrace ] forkAt: 20.
-]]]
-
-It outputs: 
-
-[[[
-p1 
-p2
-]]]
-
-As a conclusion when the semaphore is signalled, the first waiting process of the semaphore is removed from the semaphore list,
-and resumed following the preemption rules of the scheduler.
 
 Stef revisit.
 In fact the message ==signal==  does not transfer execution unless the waiting process that received the signal has a higher priority.
