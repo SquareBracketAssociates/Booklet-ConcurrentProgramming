@@ -11,7 +11,7 @@ You can simply contact us at stephane.ducasse@inria.fr
 
 11 January 2020.
 
-Thanks DiagProf., Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
+Thanks DiagProf, Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
 Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
 
 !! Concurrent programming in Pharo
@@ -93,9 +93,10 @@ We define the states in which a process can be:
 - ""suspended"" - the process is not managed by the scheduler. This process is not in one of the scheduler lists. The process can be runnable.
 - ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can be runnable.
 
+We will try to use systematically this vocabulary in the rest of the book.
 
 !!! Creating processes
-Now we can 
+Let us now write some code snippets. 
 
 !!!! Creating a process without scheduling it
 We create a process by sending the message ==newProcess== to a block defining the computation that should be carry in such process. 
