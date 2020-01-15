@@ -11,20 +11,21 @@ You can simply contact us at stephane.ducasse@inria.fr
 
 11 January 2020.
 
-Thanks DiagProf. Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
-Than you again. Special thanks to DiagProf for a patience fixing typos. Special thanks to Ben Coman for the great examples.
+Thanks DiagProf., Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
+Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
 
 !! Concurrent programming in Pharo
 @chaconcprog
 
 Pharo is a sequential language since at one point in time there is only one computation carried on. However, it has the ability to run programs concurrently by interleaving their executions. The idea behind Pharo is to propose a complete OS and as such a Pharo run-time offers the possibility to execute different processes in Pharo lingua (or green threads in other languages) that are scheduled by a process scheduler defined within the language.
 
-Pharo's concurrency is priority-based ''preemptive'' and ''collaborative''. It is ''preemptive'' because a process with higher priority interrupts the current running one. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
+Pharo's concurrency is priority-based ''preemptive'' and ''collaborative''. It is ''preemptive'' because a process with higher priority interrupts (preempts) processes of lower priority. It is ''collaborative'' because the current process should explicitly release the control to give a chance to the other processes of the same priority to get executed by the scheduler.
 
-In this chapter we present how processes are created and their lifetime. We present
-semaphores since they are the most basic building blocks to support concurrent programming and the infrastructure to execute concurrent programs. We will show how the process scheduler manages the system. 
+In this chapter we present how processes are created and their lifetime. 
+We will show how the process scheduler manages the system. 
 
-In a subsequent chapter we will present the other abstractions: Mutex, Monitor and Delay.
+In a subsequent chapter we will present the semaphores in details and revisit scheduler principles
+then later we will present other abstractions such as Mutex, Monitor and Delay.
 
 
 !!! Studying an example
@@ -400,6 +401,7 @@ In the next chapter we explain semaphores since we will explain how the schedule
 
 !! Semaphores
 @chasemaphores
+
 
 Often we encounter situations where we need to synchronize processes.
 For example, imagine that you only have one pen and that there are several writers wanting to use it.
