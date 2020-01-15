@@ -39,7 +39,8 @@ They have their own execution flow but share the same memory space and use concu
 
 
 !!! A simple example
-Let us start with a simple example. We will explain all the details in subsequent sections.
+Let us start with a simple example.
+We will explain all the details in subsequent sections.
 The following code creates two processes using the message ==fork== sent to a block.
 In each process we enumerate numbers: the first process from 1 to 10 and the second one form 101 to 110.
 During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
@@ -83,9 +84,18 @@ A process has:
 
 A process can be in different states depending on its life-time (""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"") as shown in Figure *@processStates*. We look at such states now.
 
-+Process states:  A process (green thread) can be in one of the following states: ""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"".>file://figures/processStates.pdf|width=70|label=processStates+
++Process states:  A process (green thread) can be in one of the following states: ""runnable"", ""suspended"", ""executing"", ""waiting"", ""terminated"".>file://figures/processStates.pdf|width=75|label=processStates+
+
+We define the states in which a process can be:
+- ""executing"" - the process is currently executing.
+- ""runnable"" - the process is scheduled. This process is in one of priority lists of the processes that will be executed by the scheduler.
+- ""terminated"" - the process runs and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
+- ""suspended"" - the process is not managed by the scheduler. This process is not in one of the scheduler lists. The process can be runnable.
+- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can be runnable.
 
 
+!!! Creating processes
+Now we can 
 
 !!!! Creating a process without scheduling it
 We create a process by sending the message ==newProcess== to a block defining the computation that should be carry in such process. 
