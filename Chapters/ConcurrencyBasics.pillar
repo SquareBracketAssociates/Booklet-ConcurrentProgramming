@@ -100,7 +100,7 @@ Let us now write some code snippets.
 
 !!!! Creating a process without scheduling it
 We create a process by sending the message ==newProcess== to a block defining the computation that should be carry in such process. 
-This process is not immediately scheduled (hence ""suspended""). Then later on we can schedule the process by sending it the message ==resume==.
+This process is not immediately scheduled, it is ""suspended"". Then later on we can schedule the process by sending it the message ==resume==: the process will be ""runnable"".
 
 The following creates a process in ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler.
 
@@ -110,17 +110,17 @@ pr := [ 1 to: 10 do: [ :i | i traceCr ] ] newProcess.
 pr inspect
 ]]]
 
-To be executed, this process should be scheduled and added to the list of suspended processes managed by the process scheduled. This is simpl done by sending it the message ==resume==.
+To be executed, this process should be scheduled and added to the list of suspended processes managed by the process scheduler. 
+This is simply done by sending it the message ==resume==.
 
 In the inspector open by the previous expression, you can execute ==self resume== and then the process will be scheduled. 
-It means that he will be added to the priority list of the process scheduler and that the process scheduler will schedule it (assuming that there
-is not a greedy process of the same priority not releasing the control).
+It means that it will be added to the priority list corresponding to the process priority of the process scheduler and that the process scheduler will eventually schedule it.
 
 [[[
 self resume
 ]]]
 
-Note that by default the priority of a process is the same of the active priority (the one of the active process).
+Note that by default the priority of a process created using the message ==newProcess== is the active priority: the priority of the active process.
 
 !!!! Passing arguments to a process
 You can also pass arguments to a process with the message ==newProcessWith: anArray== as follows:
@@ -133,7 +133,7 @@ pr := [ :max |
 pr resume
 ]]]
 
-Note that argument array are passed to the corresponding block parameters.
+The arguments are passed to the corresponding block parameters.
 
 !!!! Suspending and terminating a process
 A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
@@ -154,15 +154,14 @@ pr isTerminated
 
 !!!! Creating and scheduling in one go
 We can also create and schedule a process using an helper method named: ==fork==.
-It is basically sending the ==newProcess== message and a ==resume== message to the created process. 
+It is basically sending the ==newProcess== message and a ==resume== message to the created process.
+
 [[[
 [ 1 to: 10 do: [ :i | i trace ] ] fork
 ]]]
 
 This expression creates an instance of the class ==Process==. 
-It is added to the list of scheduled processes of the process scheduler (as we will explained later). 
-We say that this process is ==runnable==: 
-it can be potentially executed. 
+The created process is ==runnable==: it can be potentially executed. 
 It will be executed when the process scheduler will schedule it as the current running process and give it the flow of control.
 At this moment the block of this process will be executed.
 
@@ -171,8 +170,6 @@ As you see on Figure *@processStates* a process can be in a waiting state.
 It means that the process is blocked waiting for a change to happen (usually waiting for a semaphore to be signalled).
 This happens when you need to synchronize concurrent processes.
 The basic synchronization mechanism is a semaphore and we will cover this deeply in subsequent chapters.
-
-
 
 
 !!!First look at ProcessorScheduler
