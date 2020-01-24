@@ -34,7 +34,7 @@ Pharo supports the concurrent execution of multiple programs using independent p
 These processes are lightweight processes as they share a common memory space. 
 Such processes are instances of the class ==Process==. 
 Note that in operating systems, processes have their own memory and communicate via pipes supporting a strong isolation. 
-In Pharo, processes are what is usually called a (green) thread in other languages. 
+In Pharo, processes are what is usually called a (green) thread or fiber in other languages. 
 They have their own execution flow but share the same memory space and use concurrent abstractions such as semaphores to synchronize with each other.
 
 
@@ -42,9 +42,9 @@ They have their own execution flow but share the same memory space and use concu
 Let us start with a simple example.
 We will explain all the details in subsequent sections.
 The following code creates two processes using the message ==fork== sent to a block.
-In each process we enumerate numbers: the first process from 1 to 10 and the second one form 101 to 110.
-During each loop step, using the expression ==Processor yield==, the current process stops its execution to give a chance to other processes with the same priority to get executed. 
-We say that the active process relinquish its execution.
+In each process, we enumerate numbers: the first process from 1 to 10 and the second one form 101 to 110.
+During each loop step, using the expression ==Processor yield==, the current process suspends its execution to give a chance to other processes with the same priority to get executed. 
+We say that the active process relinquishes its execution.
 
 [[[
 [ 1 to: 10 do: [ :i |
@@ -63,21 +63,20 @@ The output is the following one:
 ]]]
 
 We see that the two processes run concurrently, each outputting a number at a time and not producing two numbers in a row.
-We also see that a process has to explicitely give back the control of the execution to the schedule using the expression ==Processor yield==. 
+We also see that a process has to explicitely give back the execution control to the scheduler using the expression ==Processor yield==. 
 We will explain this with more details in the following.
-
 Let us look at what a process is.
 
 !!! Process
-In  Pharo, a process is an object as anything else.
+In  Pharo, a process (green thread) is an object as anything else.
 A process is an instance of the class ==Process==. 
 Pharo follows the Smalltalk naming and from a terminology point of view, this class should be called a ==Thread== as in other languages.
 It may change in the future.
 
 A process has: 
-- a priority (between 10 lowest and 80 highest). Using this priority, a process will be able to preempt other processes having lower priority and it will be managed by the process scheduler in the group of process with the same priority as shown in Figure *@SchedulerSimple*.
+- a priority (between 10 lowest and 80 highest). Using this priority, a process will preempt other processes having lower priority and it will be managed by the process scheduler in the group of process with the same priority as shown in Figure *@SchedulerSimple*.
 - when suspended, a process has a suspendedContext which is a stack reification of the moment of the suspension.
-- when runnable, a reference to the scheduler list corresponding to its priority. Such a list is also called the run queue.
+- when runnable, a reference to one of the cheduler priority lists corresponding to its priority. Such a list is also called the run queue to which the process belongs.
 
 
 !!! Process lifetime
@@ -90,8 +89,8 @@ We define the states in which a process can be:
 - ""executing"" - the process is currently executing.
 - ""runnable"" - the process is scheduled. This process is in one of priority lists of the processes that will be executed by the scheduler.
 - ""terminated"" - the process runs and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
-- ""suspended"" - the process is not managed by the scheduler. This process is not in one of the scheduler lists. The process can be runnable.
-- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can be runnable.
+- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists. The process can become runnable sending it the ==resume== message.
+- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can become runnable.
 
 We will try to use systematically this vocabulary in the rest of the book.
 
@@ -99,10 +98,11 @@ We will try to use systematically this vocabulary in the rest of the book.
 Let us now write some code snippets. 
 
 !!!! Creating a process without scheduling it
-We create a process by sending the message ==newProcess== to a block defining the computation that should be carry in such process. 
-This process is not immediately scheduled, it is ""suspended"". Then later on we can schedule the process by sending it the message ==resume==: the process will be ""runnable"".
+We create a process by sending the message ==newProcess== to a block defining the computation that should be carried in such process.
+This process is not immediately scheduled, it is ""suspended"". 
+Then later on, we can schedule the process by sending it the message ==resume==: the process will become ""runnable"".
 
-The following creates a process in ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler.
+The following creates a process in a ==suspended== state, it is not added to the list of the scheduled processes of the process scheduler.
 
 [[[
 | pr |
@@ -110,10 +110,10 @@ pr := [ 1 to: 10 do: [ :i | i traceCr ] ] newProcess.
 pr inspect
 ]]]
 
-To be executed, this process should be scheduled and added to the list of suspended processes managed by the process scheduler. 
+To be executed, this process should be scheduled and added to the list of suspended processes managed by the process scheduler.
 This is simply done by sending it the message ==resume==.
 
-In the inspector open by the previous expression, you can execute ==self resume== and then the process will be scheduled. 
+In the inspector opened by the previous expression, you can execute ==self resume== and then the process will be scheduled.
 It means that it will be added to the priority list corresponding to the process priority of the process scheduler and that the process scheduler will eventually schedule it.
 
 [[[
@@ -128,15 +128,14 @@ You can also pass arguments to a process with the message ==newProcessWith: anAr
 [[[
 | pr |
 pr := [ :max | 
-		1 to: max do: [ :i | i crTrace ] 
-		] newProcessWith: #(20).
+			1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
 pr resume
 ]]]
 
-The arguments are passed to the corresponding block parameters.
+The arguments are passed to the corresponding block parameters. It means that in the snippet above, ==max== will be bound to ==20==. 
 
 !!!! Suspending and terminating a process
-A process can also be temporarily suspended (i.e., stopped) using the message ==suspend==. 
+A process can also be temporarily suspended (i.e., stopped from executing) using the message ==suspend==. 
 A suspended processed can be rescheduled using the message ==resume== that we saw previously.
 We can also terminate a process using the message ==terminate==. 
 A terminated process cannot be scheduled anymore.
@@ -145,8 +144,7 @@ The process scheduler terminates the process once its execution is done.
 [[[
 | pr |
 pr := [ :max |
-		1 to: max do: [ :i | i crTrace ] 
-		] newProcessWith: #(20).
+			1 to: max do: [ :i | i crTrace ] ] newProcessWith: #(20).
 pr resume.
 pr isTerminated
 >>> true
@@ -182,23 +180,20 @@ To get the running process, you can execute: ==Processor activeProcess==.
 Each time a process is created and scheduled it is added at the end of the run queue corresponding to its priority.
 The scheduler will take the first process and executes it until a process of higher priority interrupts it or the process give back control to the processor. 
 
-!!!!Process priority
 
-At any time only one process can be executed. First of all, the processes are being run according to their priority. This priority can be given to a process with ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. 
++The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
+
+!!!!Process priorities
+
+At any time only one process is executed. First of all, the processes are being run according to their priority. This priority can be given to a process with the ==priority:== message, or ==forkAt:== message sent to a block. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. 
 
 
 For example, the following snippet is run at the same priority that background user tasks.
 
 [[[
-[ 1 to: 10 do: [ :i | i trace ] ] forkAt: Processor userBackgroundPriority
+[ 1 to: 10 do: [ :i | i trace ] ] 
+	forkAt: Processor userBackgroundPriority
 ]]]
-
-Its output is: 
-
-[[[
-12345678910
-]]]
-
 
 
 Next table lists all the predefined priorities together with their numerical value and purpose.
@@ -232,31 +227,26 @@ Next table lists all the predefined priorities together with their numerical val
 | | The lowest possible priority.
 
 
-We generated the table using the following expression
-[[[
-(Processor class organization listAtCategoryNamed: #'priority names' )
-	collect: [ :each | { each . Processor perform: each}  ] 
->>> #(#(#lowestPriority 10) #(#timingPriority 80) #(#lowIOPriority 60) #(#highIOPriority 70) 
-#(#systemBackgroundPriority 20) #(#userBackgroundPriority 30) 
-#(#userInterruptPriority 50) #(#userSchedulingPriority 40))
-]]]
-
+%We generated the table using the following expression
+%[[[
+%(Processor class organization listAtCategoryNamed: #'priority names' )
+%	collect: [ :each | { each . Processor perform: each}  ] 
+%>>> #(#(#lowestPriority 10) #(#timingPriority 80) #(#lowIOPriority 60) #(#highIOPriority 70) 
+%#(#systemBackgroundPriority 20) #(#userBackgroundPriority 30) 
+%#(#userInterruptPriority 50) #(#userSchedulingPriority 40))
+%]]]
 
 The scheduler knows the currently active process as well as the lists of pending processes based on their priority.
 It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*.
 It uses the priority lists to manage processes that are suspended (and waiting to be scheduled) in the first in first out way.
 
-+The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
 
-There are simple rules that manages process scheduling. We will refine the rules a bit later:
+There are simple rules that manage process scheduling. We will refine the rules a bit later:
 - Processes with higher priority preempt (interrupt) lower priority processes, if they have to be executed.
 - Assuming an ideal world where processes could execute in one shot, processes with the same priority are executed in the same order they were added to scheduled process list. (See below for a better explanation).
 
 
-
-
-
-
+Here is an example showing that process execution is ordered based on priority. 
 [[[
 [3 timesRepeat: [3 trace. ' ' trace ]] forkAt: 12.
 [3 timesRepeat: [2 trace. ' ' trace ]] forkAt: 13.
@@ -269,9 +259,12 @@ The execution outputs:
 1 1 1 2 2 2 3 3 3
 ]]]
 
-!!! Defining a little helper method
+It shows that the the process of priority 14 is executed prior to the one of priority 13. 
 
-Let us define a little trace utility method that will show the current process executing code. 
+
+!!! Let us trace better what is happening
+
+Let us define a little trace that will show the current process executing code.
 It will help understanding what is happening. 
 Now when we execute again the snippet above slightly modified:
 
@@ -283,7 +276,7 @@ Now when we execute again the snippet above slightly modified:
 	[3 timesRepeat: [ trace value: 1 ]] forkAt: 14.
 ]]]
 
-We get the following output:
+We get the following output, which display the priority of the executing process. 
 
 [[[
 @14 1
@@ -299,8 +292,7 @@ We get the following output:
 
 
 !!! Yielding the computation
-Now we should see how we express that a process can release its execution and let other processes of the same priority 
-perform their tasks. 
+Now we should see how a process relinquishes its execution and lets other processes of the same priority perform their tasks.
 Let us start with a small example based on the previous example. 
 
 [[[
@@ -311,7 +303,7 @@ Let us start with a small example based on the previous example.
 	[3 timesRepeat: [ trace value: 1. Processor yield ]] forkAt: 14.
 ]]]
 
-Here the result is the same
+Here the result is the same. 
 
 [[[
 @14 1
@@ -326,13 +318,13 @@ Here the result is the same
 ]]]
 
 What you should see is that the message ==yield== was sent, but the scheduler rescheduled the process of the highest priority that 
-did not finish.
-This example shows that yielding will never allow a process of lower priority to run.
+did not finish its execution. This example shows that yielding a process will never allow a process of lower priority to run.
 
-@@note Yielding will never allow a lower-priority-process to run.  
+@@note Yielding a process will never allow a lower-priority-process to run.
 
 
 !!!! Between processes of the same priority
+Now we can study what is happening between processes of the same priority. 
 We create two processes of the same priority that perform a loop displaying numbers.
 
 [[[
@@ -346,13 +338,13 @@ We obtain the following output:
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
 ]]]
 
-This is normal since the processes have the same priority. 
+This is normal since the processes have the same priority.
 They are scheduled and executed one after the other.
-So ==p1== executes and displays its output. 
+==p1== executes and displays its output. 
 Then it terminates and ==p2== gets the control and executes. 
 It displays its output and get terminated.
 
-During the execution of the one of the process nothing forces it to release computation. 
+During the execution of one of the process nothing forces it to relinquish computation.
 Therefore it executes until it finishes. 
 It means that if a process has an endless loop it will not release the execution 
 except if it is preempted by a process of higher priority (see Chapter scheduler's principle )
@@ -360,7 +352,7 @@ except if it is preempted by a process of higher priority (see Chapter scheduler
 
 !!!! Using yield
 
-We modify the example to introduce an explicit return of control to the processor
+We modify the example to introduce an explicit return of control to the process scheduler.
 
 [[[
 | p1 p2 |
@@ -377,19 +369,18 @@ We will come back to yield in future chapters.
 
 !!!! Summary
 
-Let us revisit what we mentioned earlier.
+Let us revisit what we learned in this chapter.
 
-- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. In addition, we should pay attention since a process can be preempted by a process of higher prioriy, the semantics of the preemption (I.e., how the preempted process is rescheduled) have an impact on the process execution order. We will discuss this is in depth in following chapters.  
-- Processes should explicitly give back the computation to give a chance to other pending processes of the same priority to execute. The same remark as above works here too. Imagine a long process not yielding its execution, this process may be interrupted by a process of higher priority and depending on the semantics of the preemption this process may not be the one that will continue to be executed.
+- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. In addition, we should pay attention since a process can be preempted by a process of higher prioriy, the semantics of the preemption (I.e., how the preempted process is rescheduled) has an impact on the process execution order. We will discuss this is in depth in following chapters.
+- Processes should explicitly give back the computation to give a chance to other pending processes of the same priority to execute. The same remark as above works here too.
+% Imagine a long process not yielding its execution, this process may be interrupted by a process of higher priority and depending on the semantics of the preemption this process may not be the one that will continue to be executed.
 - A process should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
-
-
 
 !!! Important API
 
 The process creation API is composed of messages sent to blocks.
 
-- ==[ ] newProcess== creates a unscheduled process whose code is the receiver bloc. The priority is the one of the active process.
+- ==[ ] newProcess== creates a suspended (unscheduled) process whose code is the receiver bloc. The priority is the one of the active process.
 - ==[ ] newProcessWith: anArray==  same as above but pass arguments (defined by an array) to the block.
 - ==priority:== defines the priority of a process.
 - ==[ ] fork== creates a new scheduled process having the same priority than the process that spawns it. It receives a ==resume== message so it is added to the queue corresponding to its priority. 
@@ -399,10 +390,25 @@ The process creation API is composed of messages sent to blocks.
 
 
 !!! Conclusion
+We presented the notion of process (green thread) and process scheduler. 
 We presented briefly the concurrency model of Pharo: preemptive and collaborative. A process of higher priority can stop the execution of processes of lower ones. 
 Processes at the same priority should explicit return control using the ==yield== message.
-We presented the notion of process (green thread) and process scheduler. 
+
 In the next chapter we explain semaphores since we will explain how the scheduler uses delays to performing its scheduling. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
