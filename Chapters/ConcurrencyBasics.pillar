@@ -474,7 +474,7 @@ The dequeued process is resumed and as such it is added in the waiting list of t
 When a process sends a ==wait== message to the semaphore, if the waiting list if empty then the process is executed. 
 
 !!! An example
-Before continuing let us play with semaphores.
+Before continuing, let us play with semaphores.
 Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
 
 [[[
@@ -503,7 +503,7 @@ You should see in the transcript the following:
 ]]]
 
 What you see is that the two processes stopped. They did not finish their job. 
-When a semaphore receives a ==wait== message, it will stop the process sending the message and add the process to its pending list. 
+When a semaphore receives a ==wait== message, it suspends the process sending the message and adds the process to its pending list.
 
 Now in the inspector on the semaphore execute ==self signal==.
 This schedules one of the waiting process and one of the job will finish its task.
@@ -512,53 +512,44 @@ If we do not send a new ==signal== message to the semaphore, the second waiting 
 
 !!! wait and signal interplay
 
-Todo: Revisit here
-The following example schedule three processes. It shows that thread can wait, do some action, signal that they are done that other threads in reaction can get scheduled.
-
-[[[
-| semaphore p1 p2 p3 |
-semaphore := Semaphore new. 
-p1 := [ 'Pharo' crTrace ] fork. 
-
-p2 := ['is' crTrace.
-		semaphore wait.
-		'super' crTrace. 
-		semaphore signal] fork.
-
-p3 := ['really' crTrace. 
-		semaphore signal.
-		semaphore wait.
-		'cool!' crTrace ] fork
-]]]
-
-You should obtain ==Pharo is really super cool!==. 
-
-Let us describe what is happening. 
-- ==p1== prints =='Pharo'== and finishes. 
-- ==p2== prints =='is'== and waits.
-- ==p3== prints =='really'== and signals the semaphore and waits. It is added to the waiting list after the second process.
-- Since the third process signaled the semaphore, the first waiting process (==p2==) is scheduled and prints =='super'== and signals the semaphore.
-- The third process is then resumed and is scheduled and prints: =='cool!'== and finishes.
-
-Now we really suggest to play with different priorities and predict the behavior.
-For example as follows:
+To understand the interplay between wait and signal we propose the following example. 
+Can you guess what is the displayed information?
 
 [[[
 	| semaphore p1 p2 p3 |
 	semaphore := Semaphore new. 
-	p1 := [ 'Pharo' crTrace ] forkAt: 30. 
+	p1 := [ ' Pharo ' trace ] forkAt: 30. 
 
-	p2 := ['is' crTrace.
+	p2 := [' is ' trace.
 			semaphore wait.
-			'super' crTrace. 
-			semaphore signal] forkAt: 35.
-
-	p3 := ['really' crTrace. 
+			' super ' trace. 
 			semaphore signal.
+			' p2 finished ' trace ] forkAt: 35.
+
+	p3 := [' really ' trace. 
+			semaphore signal.
+			' cool ' trace.
 			semaphore wait.
-			'cool!' crTrace ] forkAt: 30
+			' and powerful! ' trace ] forkAt: 33
 ]]]
 
+
+You should obtain ==is  really  super  p2 finished  cool  and powerful!  Pharo ==
+
+Let us describe what's happened: 
+- The three processes are created and scheduled.
+- The process with the highest priority ==p2== is executed. It prints ==is== and waits on the semaphore. 
+- ==p2== is not runnable anymore. 
+- The next highest priority process ==p3== is scheduled, it prints ==really== and signals the semaphore.
+- The semaphore is signaled so it schedules its waiting process ==p2==. Since ==p2== has higher priority than ==p3==, it is executed.
+- ==p2== prints ==super==, and it signals the semaphore.
+- There is no process waiting on the semaphore and in addition, ==p2== is the highest priority process so it continues to execute, prints ==p2 finished== and terminates.
+- ==p3== is then resumed and it prints ==cool==, then it sends the message ==wait== to the semaphore but since there was no waiting process, ==p3== continues, prints ==and powerful!== and terminates. 
+- Finally ==p1== is executed, prints ==Pharo== and terminates.
+
+We really suggest to play with different priorities and predict the behavior.
+Note that the scenario payed attention that the processes are lower priority that the UI process that is refresghind the display. 
+In addition as we will see later, we do not have processes with the same priority since the preemption may impact the order of execution. 
 
 
 !!! A key question about signal
