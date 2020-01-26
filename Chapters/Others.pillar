@@ -1,3 +1,463 @@
+This book describes the low-level abstractions available in Pharo for concurrent programming. 
+It explains pedagogically different aspects. 
+Now, if you happen to create many green threads (called Process in Pharo) we suggest that you 
+have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
+You should definitively have a look at it. 
+
+You have in your hand the first (well not the first) draft of this booklet. We are interesting in typos, english corrections,
+potential mistakes or any kind of feedback. 
+
+You can simply contact us at stephane.ducasse@inria.fr
+
+11 January 2020.
+
+Thanks DiagProf, Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
+Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!! Semaphores
+@chasemaphores
+
+
+Often we encounter situations where we need to synchronize processes.
+For example, imagine that you only have one pen and that there are several writers wanting to use it.
+You will wait for the pen and once the pen is released, you will be able to access and use it.
+Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen.
+When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
+Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
+In fact, this pen is a semaphore. 
+
+Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
+A great book proposes different synchronization challenges that are solves with Semaphore: ''The Little Book of Semaphores''.
+It is clearly a nice further readings.
+
+!!! Understanding semaphores
+
+A Semaphore is an object used to synchronize multiple processes.
+A semaphore is often used to make sure that a resource is only be accessed by a single process at the time.
+
+A process that wants to access to a resource will declare it to the semaphore protecting the resources by sending
+to the semaphore the message ==wait==. 
+The semaphore will add this process to its waiting list. 
+A semaphore keeps a list of waiting processes that want to access to the resource it protects.
+When the process currently using the resources does not use it anymore, it signals it to the semaphore sending the message ==signal==. 
+The semaphore resumes the first waiting process which is added to the suspended list of the scheduler.
+
+Here are the steps illustrating a typical scenario:
+# The semaphore protects resources: P0 is using the resources. Processes P1, P2, P3 are waiting for the resources (Fig. *@Sema1*). They are queued in the semaphore waiting list.
+# The process P4 wants to access the resources: it sends ==wait== to the semaphore (Fig. *@Sema2*).
+# P4 is added to the waiting list (Fig. *@Sema3*) - it passes from the executing to the waiting state.
+# P0 has finished to use the resources: it send the message ==signal== it to the semaphore (Fig. *@Sema4*).
+# The semaphore resumes the first waiting process, here P1 (Fig. *@Sema5*).
+# The resumed process, P1, become runnable and will be scheduled by the scheduler.
+
+
++The semaphore protects resources: P0 is using the ressources, P1...2 are waiting for the resources. >file://figures/Semaphores1.pdf|width=50|label=Sema1+
+
++The process P4 wants to access the resources: it sends the message ==wait== to the semaphore.>file://figures/Semaphores2.pdf|width=50|label=Sema2+
+
++P4 is added to the waiting list.>file://figures/Semaphores3.pdf|width=50|label=Sema3+
+
++P0 has finished to use the resources: it send the message ==signal== it to the semaphore. The semaphore resumes the first pending process. >file://figures/Semaphores4.pdf|width=50|label=Sema4+
+
++The resumed process, P1, is added to the scheduled list of process of the ProcessScheduler: it becomes runnable.>file://figures/Semaphores5.pdf|width=50|label=Sema5+
+
+%The resumed process is now scheduled by the scheduler. When P1 gets executed>file://figures/Semaphores6.pdf|width=60|label=Sema6+
+
+
+!!!! Details 
+A semaphore will only release as many processes from ==wait== messages as it has received ==signal== messages.
+When a semaphore receives a ==wait== message for which no corresponding ==signal== has been sent, the process sending the ==wait== is suspended.
+Each semaphore maintains a linked-list of suspended processes, and releases them on a first–in first–out basis.
+
+Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a process, it dequeues processes in the order in which they waited on the semaphore.
+The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
+
+When a process sends a ==wait== message to the semaphore, if the waiting list if empty then the process is executed. 
+
+!!! An example
+Before continuing, let us play with semaphores.
+Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
+
+[[[
+| semaphore |
+semaphore := Semaphore new.
+
+[ "Do a first job ..."
+	'Job1 started' crTrace.
+	semaphore wait. 
+	'Job1 finished' crTrace
+	] fork.
+
+[ "Do a second job ..."
+	'Job2 started' crTrace.
+	semaphore wait. 
+	'Job2 finished' crTrace
+	] fork.
+semaphore inspect
+]]]
+
+You should see in the transcript the following:
+
+[[[
+'Job1 started'
+'Job2 started'
+]]]
+
+What you see is that the two processes stopped. They did not finish their job. 
+When a semaphore receives a ==wait== message, it suspends the process sending the message and adds the process to its pending list.
+
+Now in the inspector on the semaphore execute ==self signal==.
+This schedules one of the waiting process and one of the job will finish its task.
+If we do not send a new ==signal== message to the semaphore, the second waiting process will never be scheduled.
+
+
+!!! wait and signal interplay
+
+To understand the interplay between wait and signal we propose the following example. 
+Can you guess what is the displayed information?
+
+[[[
+	| semaphore p1 p2 p3 |
+	semaphore := Semaphore new. 
+	p1 := [ ' Pharo ' trace ] forkAt: 30. 
+
+	p2 := [' is ' trace.
+			semaphore wait.
+			' super ' trace. 
+			semaphore signal.
+			' p2 finished ' trace ] forkAt: 35.
+
+	p3 := [' really ' trace. 
+			semaphore signal.
+			' cool ' trace.
+			semaphore wait.
+			' and powerful! ' trace ] forkAt: 33
+]]]
+
+
+You should obtain ==is  really  super  p2 finished  cool  and powerful!  Pharo ==
+
+Let us describe what's happened: 
+- The three processes are created and scheduled.
+- The process with the highest priority ==p2== is executed. It prints ==is== and waits on the semaphore. 
+- ==p2== is not runnable anymore. 
+- The next highest priority process ==p3== is scheduled, it prints ==really== and signals the semaphore.
+- The semaphore is signaled so it schedules its waiting process ==p2==. Since ==p2== has higher priority than ==p3==, it is executed.
+- ==p2== prints ==super==, and it signals the semaphore.
+- There is no process waiting on the semaphore and in addition, ==p2== is the highest priority process so it continues to execute, prints ==p2 finished== and terminates.
+- ==p3== is then resumed and it prints ==cool==, then it sends the message ==wait== to the semaphore but since there was no waiting process, ==p3== continues, prints ==and powerful!== and terminates. 
+- Finally ==p1== is executed, prints ==Pharo== and terminates.
+
+We really suggest to play with different priorities and predict the behavior.
+Note that the scenario payed attention that the processes are lower priority that the UI process that is refresghind the display. 
+In addition as we will see later, we do not have processes with the same priority since the preemption may impact the order of execution. 
+
+
+!!! A key question about signal
+Let us imagine that we have the following two processes of different priorities and one semaphore.
+We would like to show the influence of ==signal== on the scheduling of such processes.
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 20.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 30.
+]]]
+
+Here the higher priority process (==p2==) produces a trace, signals the semaphore and finishes. 
+Then the lower priority process produces a trace, waits and since the semaphore has been signalled, it executes and terminates.
+
+[[[
+	@30 Process 2a up to signalling semaphore
+	@30 Process 2b continues and terminates
+	@20 Process 1a waits for signal on semaphore
+	@20 Process 1b received signal and terminates
+]]]
+
+Now let us swap the prioriy.
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+	p1 := [
+	   trace value: 'Process 1a waits for signal on semaphore'. 
+	   semaphore wait.
+	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+	   trace value: 'Process 2a up to signalling semaphore'. 
+	   semaphore signal.
+	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+]]]
+
+Here the higher priority process (==p1==) produces trace and waits on the semaphore. 
+==p2== is then executed: it produces a trace, then signals the semaphore. 
+This ==signal== message reschedules ==p1== and since it is of higher priority, it is executed first preempting (==p2==) and it terminates. 
+Then ==p2== terminates.
+
+[[[
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a up to signalling semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+]]]
+
+
+There is subtle point that the second example does not illustrate but that is worth that we discuss: while the lowest priority process signaled the semaphore it gets preempted by the higher priority ones. This raises the question of what it the process to be rescheduled after preemption. 
+The example does not show it because we got only one process of priority 20.
+We will go over this point in the next Chapter.
+
+!!! Prearmed semaphore
+
+A process wanting a resource protected by a semaphore does not have to be systematically put on the waiting list.
+There are situations where if it would be the case, the system would be blocked forever because no process could signal
+the semaphore: an no pending process would be resumed. 
+
+A semaphore can be prearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages. 
+In such a case, a process requesting to access the resources will just proceed and be scheduled without first being queued to the waiting list.
+
+A semaphore holds a counter of signals that it receives but did not lead to a process execution.
+It will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
+
+!!!! Example 
+
+Let us modify slightly the previous example.
+We send a ==signal== message to the semaphore prior to creating the processes.
+The semaphore is then prearmed. 
+
+[[[
+| trace semaphore p1 p2 |
+semaphore := Semaphore new.
+semaphore signal.
+trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+p1 := [
+   trace value: 'Process 1a waits for signal on semaphore'. 
+   semaphore wait.
+   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+p2 := [
+   trace value: 'Process 2a up to signalling semaphore'. 
+   semaphore signal.
+   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+]]]
+
+The previous example produces the following trace:
+
+[[[
+	@30 Process 1a waits for signal on semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2a up to signalling semaphore
+	@20 Process 2b continues and terminates
+]]]
+
+This example illustrates that a process does not have to systematically wait on a semaphore.
+
+This is important to make sure that on certain concurrency synchronisation, all the processes are waiting, while the first one could do its task and send a signal to schedule others.
+
+
+We can ask a semaphore whether if it is prearmed using the message ==isSignaled==.
+[[[
+sema := Semaphore new.
+sema signal.
+sema isSignaled
+>>> true
+]]]
+
+
+!!! forMutualExclusion
+
+Sometimes we need to ensure that a section of code is only executed when no other process is executing it or that no other process
+will execute it while a first process is already. 
+We want to make sure that only one process at a time executes a section of code. 
+This code section is called a ''critical section''. 
+
+The class ==Semaphore== offers the message ==critical: aBlock== to define a critical code section for the block passed as argument.
+It evaluates aBlock only if the receiver is not currently in the process of running the ==critical:== message. 
+If the receiver is currently executed, aBlock will be executed after the other ==critical:== message is finished.
+
+To use a critical, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==.
+It makes sure that the first execution of the critical section will pass without get blocked (,i.e., put on the semaphore waiting list waiting for a wait).
+
+Here is an example of critical section use: The memory logger makes sure that when several processes work concurrently, the execution of the different processes does not mess the recording of the item addition. Similarly, the logger makes sure that when only one process can resett the recordings.
+
+
+[[[
+MemoryLogger >> nextPut: aSignal
+	mutex critical: [
+		recordings add: aSignal ].
+	self announcer announce: aSignal
+]]]
+
+[[[
+MemoryLogger >> reset
+	mutex critical: [
+		recordings := OrderedCollection new ]
+]]]
+
+Now the previous code use a mutex and not a semaphore. 
+
+!!!! Deadlocking semaphores.
+Pay attention that a semaphore critical section cannot be nested.
+A semaphore gets blocked (waiting) when being called from a critical section its protects.
+Mutexes (also named ==RecursionLock==) solves this problem.
+This is why a ==Mutex== and a semaphore are not interchangeable.
+
+[[[
+| deadlockSem |
+deadlockSem := Semaphore new. 
+deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
+]]]
+
+
+
+!!! Implementation: the language perspective
+
+We propose to have a look at the implementation of semaphores. In a first reading you can skip the following sections.
+We take two perspectives: how the ==Semaphore== class is defined within Pharo and later how the virtual machine defines the primitives mandatory for the semaphore implementation. Let us start with the language level definition. 
+
+
+!!!! Pharo's implementation.
+
+A semaphore keeps a number of excess signals: the amount of signals that did not lead to schedule a waiting process.
+If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
+On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
+
+The fact that the semaphore waiting list is a linked list has an impact on the semaphore semantics. It makes sure that waiting processes are managed
+in a first in first out manner. 
+
+While conceptually a semaphore has a list and a counter. 
+At the Pharo implementation level, the class ==Semaphore== inherits from the class ==LinkedList==, so the waiting process list is 'directly' the semaphore itself. Since ==Process== inherits from ==Link== (elements that can be added to linked list), they can be directly added to the semaphore without being wrapped by an element object. This is a simplification for the virtual machine.
+
+Here is the implementation of ==signal== and ==wait== in Pharo.
+
+!!!! Signal implementation.
+The ==signal== method shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+[[[
+Semaphore >> signal
+	"Primitive. Send a signal through the receiver. If one or more processes 
+	have been suspended trying to receive a signal, allow the first one to 
+	proceed. If no process is waiting, remember the excess signal."
+
+	<primitive: 85>
+	self primitiveFailed
+
+	"self isEmpty    
+		ifTrue: [excessSignals := excessSignals+1]    
+		ifFalse: [Processor resume: self removeFirstLink]"
+]]]
+
+!!!! Wait implementation.
+The ==wait== method shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess.  On the contrary, when there is no signals on excess, then the process is suspended and added to the semaphore waiting list.
+
+[[[
+Semaphore >> wait
+	"Primitive. The active Process must receive a signal through the receiver 
+	before proceeding. If no signal has been sent, the active Process will be 
+	suspended until one is sent."
+
+	<primitive: 86>
+	self primitiveFailed
+
+	"excessSignals>0  
+		ifTrue: [excessSignals := excessSignals - 1]  
+		ifFalse: [self addLastLink: Processor activeProcess suspend]"
+]]]
+
+
+!!! Implementation: the VM perspective
+Here we look at the virtual machine definition of the primitives.
+We show for quick reference the StackInterpreter code since it is a little simpler than the JIT version.
+
+As we saw previously two primitives are defined: one for ==wait== and one for ==signal==.
+
+[[[
+StackInterpreter class >> initializePrimitiveTable 
+	...
+	"Control Primitives (80-89)"
+	(85 primitiveSignal)
+	(86 primitiveWait)
+	...
+]]]
+
+We see that the ==wait== primitive checks the number of signal of the semaphore. When such number is positive, it is decreased and the process is not suspended. On the contrary, it grabs the active process, adds it to the semaphore list and give back the control to the highest process.
+
+[[[
+InterpreterPrimitives >> primitiveWait
+	| sema excessSignals activeProc |
+	sema := self stackTop.  "rcvr"
+	excessSignals := self fetchInteger: ExcessSignalsIndex ofObject: sema.
+	excessSignals > 0
+		ifTrue:
+			[self storeInteger: ExcessSignalsIndex ofObject: sema withValue: excessSignals - 1]
+		ifFalse:
+			[activeProc := self activeProcess.
+			self addLastLink: activeProc toList: sema.
+			self transferTo: self wakeHighestPriority]
+]]]
+
+[[[
+InterpreterPrimitives >> primitiveSignal [
+	"Synchronously signal the semaphore.
+	This may change the active process as a result."
+	
+	self synchronousSignal: self stackTop  "rcvr"
+]]]
+
+Here if the semaphore list is empty, the signal primitive is incrementing the signal count of the semaphore.
+Else, the first pending process is resumed. 
+
+[[[
+StackInterpreter >> synchronousSignal: aSemaphore
+	"Signal the given semaphore from within the interpreter.
+	Answer if the current process was preempted."
+
+	| excessSignals |
+	(self isEmptyList: aSemaphore) ifTrue:
+		["no process is waiting on this semaphore"
+		excessSignals := self fetchInteger: ExcessSignalsIndex ofObject: aSemaphore.
+		self storeInteger: ExcessSignalsIndex
+			ofObject: aSemaphore
+			withValue: excessSignals + 1.
+		^false].
+	objectMemory ensureSemaphoreUnforwardedThroughContext: aSemaphore.
+	^ self 
+		resume: (self removeFirstLinkOfList: aSemaphore)
+		preemptedYieldingIf: preemptionYields
+]]]
+
+We will explain the ==preemptionYields== used in the last line in a future chapter. 
+
+
+
+!!! Conclusion
+
+Semaphores are the lower synchronisation mechanisms. 
+Pharo offers other abstractions to synchronize such as Mutexes (also named recursion lock), Monitors, shared queue, ...
+
+
 
 
 
