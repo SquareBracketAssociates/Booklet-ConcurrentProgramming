@@ -716,18 +716,27 @@ deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 
 
 !!! Implementation: the language perspective
-A semaphore keeps a number of excess signals: the amount of signals that did not led to schedule a waiting process.
+
+We propose to have a look at the implementation of semaphores. In a first reading you can skip the following sections.
+We take two perspectives: how the ==Semaphore== class is defined within Pharo and later how the virtual machine defines the primitives mandatory for the semaphore implementation. Let us start with the language level definition. 
+
+
+!!!! Pharo's implementation.
+
+A semaphore keeps a number of excess signals: the amount of signals that did not lead to schedule a waiting process.
 If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
 On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
 
-The fact that the semaphore waiting is a linked list has a clear impact on the semaphore semantics.
-While conceptually a semaphore has a list and a counter. At the implementation level, the class Semaphore inherits from the class LinkedList, so the waiting process list is 'directly' in the semaphore itself. Since Process inherits from Link (elements that can be added to linked list), they can be directly added to the semaphore without being wrapped by an element object.
-This is a simplification for the virtual machine.
+The fact that the semaphore waiting list is a linked list has an impact on the semaphore semantics. It makes sure that waiting processes are managed
+in a first in first out manner. 
+
+While conceptually a semaphore has a list and a counter. 
+At the Pharo implementation level, the class ==Semaphore== inherits from the class ==LinkedList==, so the waiting process list is 'directly' the semaphore itself. Since ==Process== inherits from ==Link== (elements that can be added to linked list), they can be directly added to the semaphore without being wrapped by an element object. This is a simplification for the virtual machine.
 
 Here is the implementation of ==signal== and ==wait== in Pharo.
 
-The ==signal== method shows that If there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
-
+!!!! Signal implementation.
+The ==signal== method shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
 [[[
 Semaphore >> signal
 	"Primitive. Send a signal through the receiver. If one or more processes 
@@ -742,8 +751,8 @@ Semaphore >> signal
 		ifFalse: [Processor resume: self removeFirstLink]"
 ]]]
 
-The ==wait== method shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess. 
-On the contrary, when there is no signals on excess, then the process is suspended.
+!!!! Wait implementation.
+The ==wait== method shows that when a semaphore has some signals on excess, waiting is not blocking, it just decreases the number of signals on excess.  On the contrary, when there is no signals on excess, then the process is suspended and added to the semaphore waiting list.
 
 [[[
 Semaphore >> wait
@@ -761,10 +770,10 @@ Semaphore >> wait
 
 
 !!! Implementation: the VM perspective
+Here we look at the virtual machine definition of the primitives.
+We show for quick reference the StackInterpreter code since it is a little simpler than the JIT version.
 
-For quick reference, here is some relevant VM code (the StackInterpreter code is a little simpler).
-
-As we saw previously two primitives are defined: one for ==wait== and one for ==signal==. 
+As we saw previously two primitives are defined: one for ==wait== and one for ==signal==.
 
 [[[
 StackInterpreter class >> initializePrimitiveTable 
@@ -775,8 +784,7 @@ StackInterpreter class >> initializePrimitiveTable
 	...
 ]]]
 
-We see that the wait primitive will grab the active process and add it to the semaphore list and 
-
+We see that the ==wait== primitive checks the number of signal of the semaphore. When such number is positive, it is decreased and the process is not suspended. On the contrary, it grabs the active process, adds it to the semaphore list and give back the control to the highest process.
 
 [[[
 InterpreterPrimitives >> primitiveWait
