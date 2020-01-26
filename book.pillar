@@ -17,6 +17,5 @@ Than you again. Special thanks to DiagProf for his patience fixing typos. Specia
 ${inputFile:Chapters/Overview.pillar}$
 ${inputFile:Chapters/Semaphores.pillar}$
 ${inputFile:Chapters/Scheduler.pillar}$
+${inputFile:Chapters/SemaphoreAtWork.pillar}$
 ${inputFile:Chapters/ConcurrencyBasics.pillar}$
-
-%${inputFile:Chapters/ConcurrencyBasics.pillar}$

@@ -1,36 +1,3 @@
-This book describes the low-level abstractions available in Pharo for concurrent programming. 
-It explains pedagogically different aspects. 
-Now, if you happen to create many green threads (called Process in Pharo) we suggest that you 
-have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
-You should definitively have a look at it. 
-
-You have in your hand the first (well not the first) draft of this booklet. We are interesting in typos, english corrections,
-potential mistakes or any kind of feedback. 
-
-You can simply contact us at stephane.ducasse@inria.fr
-
-11 January 2020.
-
-Thanks DiagProf, Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
-Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 !! Semaphores
 @chasemaphores
 
@@ -331,6 +298,63 @@ deadlockSem := Semaphore new.
 deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
+!!!! Nested critical sections.
+In addition a Mutex is also more robust  to nested critical calls than a semaphore.
+For example the following snippet will not deadlock, while a semaphore will. This is why a mutex is also called a recursionLock.
+
+[[[
+|mutex|
+mutex := Mutex new. 
+mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
+]]]
+
+The same code gets blocked on a deadlock with a semaphore.
+A Mutex and a semaphore are not interchangeable from this perspective.
+So let's see what is a Mutex.
+
+!!! Mutex 
+A Mutex (MUTual EXclusion) is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
+As such a Mutex  is an object that protects a shared resources.
+A mutex can be used when two or more processes need to access a shared resource concurrently.
+A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use.
+Waiting processes are granted access to the mutex in the order the access was requested.
+An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
+
+!!!! Mutex implementation
+[[[
+Object subclass: #Mutex
+	instanceVariableNames: 'semaphore owner'
+	classVariableNames: ''
+	package: 'Kernel-Processes'
+]]]
+
+The ==initialize== method makes sure that the semaphore is prearmed for mutual exclusion.
+Remember it means that the first waiting process will directly proceed and not get added to the waiting list.
+
+[[[
+Mutex >> initialize
+	super initialize.
+	semaphore := Semaphore forMutualExclusion
+]]]
+
+The key method is the method ==critical:==. 
+It checks if the owner of the mutex is the current thread.
+In such case it executes the protected block, and return. 
+Else it means that the process waits on the critical section and when the semaphore resumes it
+it sets the process as owner of the section and makes sure that the owner is reset once
+the critical section is passed through.
+
+[[[
+Mutex >> critical: aBlock
+	"Evaluate aBlock protected by the receiver."
+
+	| activeProcess |
+	activeProcess := Processor activeProcess.
+	activeProcess == owner ifTrue: [ ^aBlock value ].
+	^ semaphore critical: [
+		owner := activeProcess.
+		aBlock ensure: [ owner := nil ]].
+]]]
 
 
 !!! Implementation: the language perspective
