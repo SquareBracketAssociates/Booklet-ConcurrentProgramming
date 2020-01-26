@@ -286,11 +286,11 @@ MemoryLogger >> reset
 
 Now the previous code use a mutex and not a semaphore. 
 
-!!!! Deadlocking semaphores.
+!!! Deadlocking semaphores
+
 Pay attention that a semaphore critical section cannot be nested.
 A semaphore gets blocked (waiting) when being called from a critical section its protects.
-Mutexes (also named ==RecursionLock==) solves this problem.
-This is why a ==Mutex== and a semaphore are not interchangeable.
+
 
 [[[
 | deadlockSem |
@@ -298,27 +298,30 @@ deadlockSem := Semaphore new.
 deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
-!!!! Nested critical sections.
-In addition a Mutex is also more robust  to nested critical calls than a semaphore.
-For example the following snippet will not deadlock, while a semaphore will. This is why a mutex is also called a recursionLock.
+Mutexes (also named ==RecursionLock==) solves this problem.
+This is why a ==Mutex== and a semaphore are not interchangeable.
+So let's see what is a Mutex.
+
+!!! Mutex 
+A Mutex (MUTual EXclusion) is a semaphore with more information: the current process running held in the ==owner== instance variable.
+As such a Mutex  is an object that protects a shared resources.
+A mutex can be used when two or more processes need to access a shared resource concurrently.
+A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use.
+Waiting processes are granted access to the mutex in the order the access was requested.
+An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
+
+!!!! Nested critical sections
+A Mutex is also more robust  to nested critical calls than a semaphore.
+For example the following snippet will not deadlock, while a semaphore will. This is why a mutex is sometimes called a recursionLock.
 
 [[[
-|mutex|
+| mutex |
 mutex := Mutex new. 
 mutex critical: [ mutex critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
 The same code gets blocked on a deadlock with a semaphore.
 A Mutex and a semaphore are not interchangeable from this perspective.
-So let's see what is a Mutex.
-
-!!! Mutex 
-A Mutex (MUTual EXclusion) is a semaphore with a little more information: the current process running held in the ==owner== instance variable. 
-As such a Mutex  is an object that protects a shared resources.
-A mutex can be used when two or more processes need to access a shared resource concurrently.
-A Mutex grants ownership to a single process and will suspend any other process trying to aquire the mutex while in use.
-Waiting processes are granted access to the mutex in the order the access was requested.
-An instance of the class ==Mutex== will make sure that only one thread of control can be executed simultaneously on a given portion of code using the message ==critical:==.
 
 !!!! Mutex implementation
 [[[
@@ -378,7 +381,8 @@ At the Pharo implementation level, the class ==Semaphore== inherits from the cla
 Here is the implementation of ==signal== and ==wait== in Pharo.
 
 !!!! Signal implementation.
-The ==signal== method shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled.
+The ==signal== method shows that if there is no waiting process, the excess signal is increased, else when there are waiting processes, the first one is scheduled (i.e., the process scheduler resumes the process).
+
 [[[
 Semaphore >> signal
 	"Primitive. Send a signal through the receiver. If one or more processes 
@@ -388,8 +392,8 @@ Semaphore >> signal
 	<primitive: 85>
 	self primitiveFailed
 
-	"self isEmpty    
-		ifTrue: [excessSignals := excessSignals+1]    
+	"self isEmpty
+		ifTrue: [excessSignals := excessSignals+1]
 		ifFalse: [Processor resume: self removeFirstLink]"
 ]]]
 
@@ -405,8 +409,8 @@ Semaphore >> wait
 	<primitive: 86>
 	self primitiveFailed
 
-	"excessSignals>0  
-		ifTrue: [excessSignals := excessSignals - 1]  
+	"excessSignals > 0
+		ifTrue: [excessSignals := excessSignals - 1]
 		ifFalse: [self addLastLink: Processor activeProcess suspend]"
 ]]]
 

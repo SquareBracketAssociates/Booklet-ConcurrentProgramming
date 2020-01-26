@@ -1,29 +1,20 @@
-
-
-
-
-
-
 !! Scheduler's principles
 @chaprinciples
 
 In this chapter we revisit the way to scheduler works and present some implementation aspects.
 In particular we show how yield is implemented.
-Finally we show how delays are used and implemented.
+Let us start with the class ==Process==.
 
 !!! Revisiting the class ==Process==
 
-The class ==Process== is a subclass of the class ==Link==.
-A link is an element of a linked list (class ==LinkedList==).
-This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
-Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
+
 
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
 - myList: the process scheduler list of processes to which the suspended process belongs to. This list is also called it run queue and it is only for suspended processes.
 
-You can do the little following tests to see the state of a process
+You can do the little following tests to see the state of a process.
 
 The first example opens an inspector in which you can see the state of the executed process. 
 
@@ -46,26 +37,36 @@ Now a suspended process suspended context should not be nil, obviously.
 ([ 1 + 2 ] fork suspend ; suspendedContext) isNotNil
 ]]]
 
+!!!! Implementation details.
+The class ==Process== is a subclass of the class ==Link==.
+A link is an element of a linked list (class ==LinkedList==).
+This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
+Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
 
 !!!! States
 
 We saw previously the different states a process can be in.
 We also saw semaphores which suspend and resume suspended processes.
 We revisit the different states of a process by looking its interaction with the process scheduler and 
-semaphores as shown in *@ProcessorStateScheduler* : 
-- executing: it is currently executed.
-- runnable: it is one of the run queue of the scheduler. The process scheduler  can execute it.
-- waiting: It is in the waiting list of a semaphore. The process scheduler does not know anything about it.
-- suspended: the process scheduler does not manage it (the process is not in its run queue) and the process is not in a semaphore waiting list.
-- terminated: a process cannot be scheduled or executed anymore.
+semaphores as shown in *@ProcessorStateSchedulerSemaphore* : 
+
+
+- ""executing"" - the process is currently executing.
+- ""runnable"" - the process is scheduled. This process is in one of the priority lists of the scheduler. It may be turned into the executing state by the scheduler.
+- ""terminated"" - the process run and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
+- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists or in a semaphore list. The process can become runnable sending it the ==resume== message.
+- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can become runnable when the semaphore releases it.
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 
 !!! Looking at some core process primitives 
 
+It is worth to look at the way ==Process== key methods are implemented. 
 
-Todo: More here
+The message ==suspend== is a primitive and implemented at the VM level. 
+Since the process list (myList) refers to one of the scheduler priority list in which it is, we see that the message ==suspend== effectively
+
 [[[
 Process >> suspend
 	"Primitive. Stop the process that the receiver represents in such a way 
@@ -83,6 +84,7 @@ Process >> suspend
 	^ oldList
 ]]]
 
+The ==resume== method comment is less interesting. 
 [[[
 Process >> resume
 	"Allow the process that the receiver represents to continue. Put 
@@ -95,11 +97,41 @@ Process >> resume
 ]]]
 
 [[[
+Process >> primitiveResume
+	"Primitive. Allow the process that the receiver represents to continue. Put 
+	the receiver in line to become the activeProcess. Fail if the receiver is 
+	already waiting in a queue (in a Semaphore or ProcessScheduler). 
+	Essential. See Object documentation whatIsAPrimitive."
+
+	<primitive: 87>
+	self primitiveFailed
+]]]
+
+Looking at the virtual machine definition shows that the resumed process does not preempt processes having the same priority and that would be executing.
+
+[[[
+InterpreterPrimitives >> primitiveResume
+	"Put this process on the scheduler's lists thus allowing it to proceed next time there is
+	 a chance for processes of its priority level. It must go to the back of its run queue so
+	 as not to preempt any already running processes at this level. If the process's priority
+	 is higher than the current process, preempt the current process."
+	| proc |
+	proc := self stackTop.  "rcvr"
+	(objectMemory isContext: (objectMemory fetchPointer: SuspendedContextIndex ofObject: proc)) ifFalse:
+		[^self primitiveFail].
+	self resume: proc preemptedYieldingIf: preemptionYields
+]]]
+
+Now we can have a look at the implementation of ==fork== and ==newProcess==. 
+
+[[[
 BlockClosure >> fork
 	"Create and schedule a Process running the code in the receiver."
 
 	^ self newProcess resume
 ]]]
+
+The method ==newProcess== creates a process by reifying a new block as a stack representation. The responsibility of this new block is to execute the receiver and terminates the process.
 
 [[[
 BlockClosure >> newProcess
@@ -115,7 +147,8 @@ BlockClosure >> newProcess
 ]]]
 
 !!! Priorities
-A runnable process of a given priority is always executed before a process of an inferior pririoty.
+A runnable process has a priority. 
+It is always executed before a process of an inferior priority.
 Remember the examples of previous chapter:
 
 [[[
@@ -126,11 +159,22 @@ Remember the examples of previous chapter:
 	[3 timesRepeat: [ trace value: 1. Processor yield ]] forkAt: 14.
 ]]]
 
-It shows that even if processes yield, the processes of lower priority were not scheduled before 
+[[[
+@14 1
+@14 1
+@14 1
+@13 2
+@13 2
+@13 2
+@12 3
+@12 3
+@12 3
+]]]
+
+This code snippet shows that even if processes relinquishes execution (via a message ==yield==), the processes of lower priority are not scheduled before 
 the process of higher priority got terminated.
 
-
-@@note In the case of a higher priority level process interrupting a process of lower priority, when the interrupting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. In Pharo, the interrupted process is put at the end of the waiting queue, while a better design is to resume the interrupted process to give it a chance to continue its tasks.
+@@note In the case of a higher priority level process preempting a process of lower priority, when the preempting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. Currently in Pharo, the interrupted process is put at the end of the waiting queue, while an alternative is to resume the interrupted process to give it a chance to continue its task.
 
 !!! Getting back to signal
 
@@ -277,13 +321,13 @@ For a lower-priority process to run, the current process needs to suspend itself
 
 
 !!! Understanding yield
-We mentioned in the first chapter, that Pharo concurrency model is preemptive and collaborative. 
+We mentioned in the first chapter, Pharo's concurrency model is preemptive between processes of different priorities and collaborative among processes of the same priority.
 We detail how the collaboration occurs: a process has to explicitly give back its execution. 
 As we show in the previous chapter, it does it by sending the message ==yield== to the scheduler. 
 
 Now let us study the implementation of the method ==yield== itself. 
-It is really elegant. It creates a process whose execution will signal a semaphore
-and the current process will wait until the created process is scheduled by the processor. 
+It is really elegant. 
+It creates a process whose execution will signal a semaphore and the current process will wait on such a semaphore until the created process is scheduled by the processor. Since 
 
 
 [[[
@@ -296,6 +340,22 @@ ProcessScheduler >> yield
 	semaphore wait
 ]]]
 
+Note that this implementation implies that 
+
+The ==yield== method does the following: 
+# The fork creates a new process. It adds it to the end of the active process's run queue (because fork create a process whose priority is the same as the active process).
+# The message ==wait== in ==semaphore wait== removes the active process from its run queue and adds it to the semaphore list of waiting processes, so the active process is now not runnable anymore but waiting on the semaphore.
+# This allows the next process in the run queue to run, and eventually
+# allows the newly forked process to run, and
+# the signal in ==semaphore signal== removes the process from the semaphore and adds it to the back of the run queue, so
+# all processes at the same priority level as the process that called ==yield== have run.
+
+
+!!! Yield illustrated
+
+==yield== only facilitates other processes having the same priority getting a chance to run.
+It doesn't put the current process to sleep, it just moves the process to the back of its priority run queue.
+It gets to run again before any lower priority process gets a chance to run. Yielding will never allow a lower priority process to run.
 
 Figure *@yield* illustrates the execution of the two following processes yielding their computation.
 
@@ -311,31 +371,18 @@ Here is the output
 
 Here are the steps:
 # Processes P1 and P2 are scheduled and in the list (run queue) of the processor.
-# P1 is active, it writes 1 and send the message ==yield==.
-# The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list (run queue). P1 is added to S1 waiting list.
-# P2 is active, it writes 11 and send the message ==yield==.
-# The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list (run queue). P2 is added to S2 waiting list.
-# Py1 is active. S1 is signalled. 
-# P1 is scheduled. It moves from semaphore pending list to processor list (run queue). 
-# Py2 is active. S2 is signalled.
+# P1 becomes first active, it writes 1 and sends the message ==yield==.
+# The execution of ==yield== in P1 creates a Semaphore S1, a new process Py1 is added to the processor list after P2. P1 is added to S1's waiting list.
+# P2 is active, it writes 11 and sends the message ==yield==.
+# The execution of ==yield== in P2 creates a Semaphore S2, a new process Py2 is added to the processor list after Py1. P2 is added to S2's waiting list.
+# Py1 is active. S1 is signalled. Py1 finishes and is terminated.
+# P1 is scheduled. It moves from semaphore pending list to processor list after Py2. 
+# Py2 is active. S2 is signalled. Py2 finishes and is terminated.
 
 +Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
 
 
-The ==yield== method does the following: 
-# The fork creates a new process. It adds it to the end of the active process's run queue.
-# The message ==wait== in ==semaphore wait== removes the active process from its run queue and adds it to the semaphore list of waiting processes, so the active process is now not runnable but waiting on the semaphore.
-# This allows the next process in the run queue to run, and eventually
-# allows the newly forked process to run, and
-# the signal in ==semaphore signal== removes the process from the semaphore and adds it to the back of the run queue, so
-# all processes at the same priority level as the process that called ==yield== have run.
 
-
-
-==yield== only facilitates other processes at the same priority getting a chance to run.
-It doesn't put the current process to sleep, it just moves the process to the back of its priority run queue. 
-It gets to run again before any lower priority process gets a chance to run.
-Yielding will never allow a lower priority process to run.
 
 
 !!!! About the primitive in yield method

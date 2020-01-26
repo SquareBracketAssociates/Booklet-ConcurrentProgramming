@@ -9,7 +9,7 @@ potential mistakes or any kind of feedback.
 
 You can simply contact us at stephane.ducasse@inria.fr
 
-11 January 2020.
+25 January 2020.
 
 Thanks DiagProf, Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
 Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
@@ -18,4 +18,5 @@ ${inputFile:Chapters/Overview.pillar}$
 ${inputFile:Chapters/Semaphores.pillar}$
 ${inputFile:Chapters/Scheduler.pillar}$
 ${inputFile:Chapters/SemaphoreAtWork.pillar}$
-${inputFile:Chapters/ConcurrencyBasics.pillar}$
+%${inputFile:Chapters/MonitorDraft.pillar}$
+%${inputFile:Chapters/Delay.pillar}$

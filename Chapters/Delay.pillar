@@ -79,7 +79,6 @@ Delay >> setDelay: milliseconds forSemaphore: aSemaphore
 ]]]
 
 A delay has 
-- a boolean (==beingWaitedOn==) expressing whether users sent it the message ==wait==.
 - a semaphore that is used by the delay scheduler to make sure that the delay will be sleeping and waken up on time. 
 
 For example the message ==wait== of the class ==Delay== schedules the delay, and make the delay waiting.
@@ -100,5 +99,17 @@ Delay >> timingPrioritySignalExpired
 	beingWaitedOn := false.
 	delaySemaphore signal.
 ]]]
+
+
+
+!!! Notes
+
+Delays cannot be shared
+work as a semaphore the system will signal fater x time
+
+
+
+
+
 
 !!! Conclusion

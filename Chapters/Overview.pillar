@@ -71,10 +71,10 @@ A process can be in different states depending on its life-time (""runnable"", "
 
 We define the states in which a process can be:
 - ""executing"" - the process is currently executing.
-- ""runnable"" - the process is scheduled. This process is in one of priority lists of the processes that will be executed by the scheduler.
-- ""terminated"" - the process runs and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
-- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists. The process can become runnable sending it the ==resume== message.
-- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can become runnable.
+- ""runnable"" - the process is scheduled. This process is in one of the priority lists of the scheduler.
+- ""terminated"" - the process run and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
+- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists or in a semaphore list. The process can become runnable sending it the ==resume== message.
+- ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can become runnable when the semaphore releases it.
 
 We will try to use systematically this vocabulary in the rest of the book.
 
