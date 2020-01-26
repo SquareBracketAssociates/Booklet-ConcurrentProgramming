@@ -808,7 +808,7 @@ InterpreterPrimitives >> primitiveSignal [
 	self synchronousSignal: self stackTop  "rcvr"
 ]]]
 
-Here the signal primitive is incrementing the signal count if the semaphore list is empty, 
+Here if the semaphore list is empty, the signal primitive is incrementing the signal count of the semaphore.
 Else, the first pending process is resumed. 
 
 [[[
