@@ -176,7 +176,7 @@ the process of higher priority got terminated.
 
 @@note In the case of a higher priority level process preempting a process of lower priority, when the preempting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. Currently in Pharo, the interrupted process is put at the end of the waiting queue, while an alternative is to resume the interrupted process to give it a chance to continue its task.
 
-!!! Getting back to signal
+!!! signal and preemption
 
 In the previous chapter we presented this example:
 
@@ -194,9 +194,9 @@ In the previous chapter we presented this example:
 	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
 ]]]
 
-Here the higher priority process (==p1==) produces trace and wait on the semaphore. 
+Here the higher priority process (==p1==) produces trace and waits on the semaphore. 
 ==p2== is then executed: it produces a trace, then signals the semaphore. 
-This signal reschedule ==p1== and since it is of higher priority, it is executed first preempting (==p2==) and it terminates. 
+This signal reschedules ==p1== and since it is of higher priority, it preempts (==p2==) and it terminates. 
 Then ==p2== terminates.
 
 [[[
@@ -206,8 +206,7 @@ Then ==p2== terminates.
 	@20 Process 2b continues and terminates
 ]]]
 
-
-Now we add a second process of lower priority to understand what may happen on preemption. 
+Now we add a second process of lower priority to understand what may happen on preemption.
 
 [[[
 	| trace semaphore p1 p2 p3 |
@@ -222,8 +221,7 @@ Now we add a second process of lower priority to understand what may happen on p
 	   semaphore signal.
 	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
    p3 := [
-	   trace value: 'Process 3a works and terminates'. 
-		] forkAt: 20.
+	   trace value: 'Process 3a works and terminates'. ] forkAt: 20.
 ]]]
 
 Here is the produced trace. What is interesting to see is that ==p2== is preempted by ==p1== as soon as it is signalling the semaphore.
@@ -237,90 +235,18 @@ Then ==p1== terminates and the scheduler does not schedule ==p2== but ==p3==.
 	@20 Process 2b continues and terminates
 ]]]
 
-This behavior is really surprising. 
-In fact, in old version of the virtual machine the preemption was implementing this behavior: it was acting as if an impllcit yield 
-was happening, moving the current process to the end of its run queue. 
-The VM supports another semantics where the preempted process is executed first then the other processes in the run queue. 
-So far Pharo did not use this new semantics. 
-It does not mean it will not because it is super easy to use it. 
-The challenge is that all the process logic of the systeme should be reassessed to understand if some process that are not blocking 
-with the current semantics may not block with the new semantics. 
+This behavior can be surprising. 
+In fact the Pharo virtual machine offers two possibilities as we show later.
+This is due to historical reason. In old versions of the virtual machine, the preemption was implementing this behavior: it was acting as if an impllcit yield was happening, moving the preempted process to the end of its run queue on preemption return. 
+
+The current Pharo virtual machine supports another semantics where the preempted process is executed first then the other processes in the run queue. So far Pharo did not use this new semantics. 
+
+It does not mean it will not because it is super easy to use it. The challenge is that all the process logic of the system should be reassessed to understand if some processes that are not blocking  with the current semantics will not block with the new semantics.
 
 
 
 
-!!! Considering UI Thread 
-
-Stef revisit.
-In fact the message ==signal==  does not transfer execution unless the waiting process that received the signal has a higher priority.
-Within the same priority, it just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
-
-
-TO EXPLAIN.
-
-[[[
-	| trace semaphore p1 p2 |
-	semaphore := Semaphore new.
-	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
-	p1 := [
-		trace value: 'Process 1a waits for signal on semaphore'. 
-		semaphore wait.
-		trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
-	p2 := [
-		trace value: 'Process 2a signals semaphore'. 
-		semaphore signal.
-		trace value: 'Process 2b continues and terminates' ] forkAt: 20.
-	trace value: 'Original process pre-yield'.
-	Processor yield.
-	trace value: 'Original process post-yield'. 
-]]]
-
-
-TO EXPLAIN.
-
-[[[
-	@40 Original process pre-yield
-	@40 Original process post-yield
-	@30 Process 1a waits for signal on semaphore
-	@20 Process 2a signals semaphore
-	@30 Process 1b received signal and terminates
-	@20 Process 2b continues and terminates
-]]]
-
-TO EXPLAIN.
-
-[[[
-	| trace semaphore p1 p2 |
-	semaphore := Semaphore new.
-	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
-	p1 := [
-		trace value: 'Process 1a waits for signal on semaphore'. 
-		semaphore wait.
-		trace value: 'Process 1b received signal' ] forkAt: 30.
-	p2 := [
-		trace value: 'Process 2a signals semaphore'. 
-		semaphore signal.
-		trace value: 'Process 2b continues' ] forkAt: 20.
-	
-	trace value: 'Original process pre-delay'.
-	1 milliSecond wait.
-	trace value: 'Original process post-delay'.   
-]]]
-
-[[[
-	@40 Original process pre-yield
-	@30 Process 1a waits for signal on semaphore
-	@20 Process 2a signals semaphore
-	@30 Process 1b received signal and terminates
-	@20 Process 2b continues and terminates
-	@40 Original process post-yield
-]]]
-
-Yielding will never allow a lower-priority-process to run.  
-For a lower-priority process to run, the current process needs to suspend itself (with the way to get woken up later) rather than yield.
-
-
-!!! Understanding yield
+!!! Understanding ==yield==
 We mentioned in the first chapter, Pharo's concurrency model is preemptive between processes of different priorities and collaborative among processes of the same priority.
 We detail how the collaboration occurs: a process has to explicitly give back its execution. 
 As we show in the previous chapter, it does it by sending the message ==yield== to the scheduler. 
@@ -351,7 +277,7 @@ The ==yield== method does the following:
 # all processes at the same priority level as the process that called ==yield== have run.
 
 
-!!! Yield illustrated
+!!! ==yield== illustrated
 
 ==yield== only facilitates other processes having the same priority getting a chance to run.
 It doesn't put the current process to sleep, it just moves the process to the back of its priority run queue.
@@ -382,28 +308,13 @@ Here are the steps:
 +Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
 
 
+!!! Considering UI Thread 
+We saw that the message ==signal== does not transfer execution unless the waiting process that received the signal has a higher priority.
+It just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
+This respects the preemption semantics between processes of different priorities.
 
+When you execute an expression you should always consider that you execute this piece of code interactive within the UI thread. 
 
-
-!!!! About the primitive in yield method
-If you look at the exact definition of the yield message in Pharo you will see that it contains an annotation mentionning that this is primitive. 
-The primitive is an optimisation. 
-
-[[[
-ProcessScheduler >> yield
-	| semaphore |
-	<primitive: 167>
-	semaphore := Semaphore new.
-	[semaphore signal] fork.
-	semaphore wait.
-]]]
-
-When this method is executed, either the primitive puts the calling process to the back of its run queue, or (if the primitive is not implemented), it performs 
-what we explained earlier and that is illustrated by the Figure *@yield*.
-
-Note that all the primitive does is to circumvent having to create a semaphore and create and schedule a process, and do a signal and a wait to move a process to the back of its run queue.  This is worthwhile because most of the time a process's run queue is empty, it being the only runnable process at that priority.
-
-Test it:
 [[[
 | yielded |
 yielded := false.
@@ -411,8 +322,8 @@ yielded := false.
 yielded
 >>> false
 ]]]
-It returns false since the current process executing the code runs until the end. 
 
+It returns false since the current process executing the code runs until the end. 
 
 [[[
 | yielded |
@@ -423,21 +334,147 @@ yielded
 >>> true
 ]]]
 
-This expressions returns true because before the current process gives a chance to the other processes of the same priority 
-to execute. 
+This expression returns true because ==fork== creates a process with the UI thread priority (40) since the code is executed interactively.
 
-@@note to check what is the priority of the current thread version the one of the forked in the previous example?
+[[[
+| yielded |
+yielded := false.
+p := [ yielded := true ] newProcess.
+p resume. 
+Processor yield.
+p priority
+>>> 40 
+]]]
 
 
+
+The following illustrates this point using the UI thread. 
+Indeed when you execute interactively a code snippet, the execution happens in the UI process (also called UI thread) 
+with a priority of 40. 
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
+	p1 := [
+		trace value: 'Process 1a waits for signal on semaphore'. 
+		semaphore wait.
+		trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+	p2 := [
+		trace value: 'Process 2a signals semaphore'. 
+		semaphore signal.
+		trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+	trace value: 'Original process pre-yield'.
+	Processor yield.
+	trace value: 'Original process post-yield'. 
+]]]
+
+The following traces shows that ==Processor yield== does not change the execution of 
+higher priority processes. Here the UI thread is executed prior to the other and yielding does not execute 
+processes of lower priorities.
+
+[[[
+	@40 Original process pre-yield
+	@40 Original process post-yield
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a signals semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+]]]
+
+
+Now if we make the UI thread waiting for small enough time (but long enough that the other processes get executed), then 
+the other processes are run since the UI process is not runnable but waiting. 
+
+[[[
+	| trace semaphore p1 p2 |
+	semaphore := Semaphore new.
+	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) traceCr ].
+	p1 := [
+		trace value: 'Process 1a waits for signal on semaphore'. 
+		semaphore wait.
+		trace value: 'Process 1b received signal' ] forkAt: 30.
+	p2 := [
+		trace value: 'Process 2a signals semaphore'. 
+		semaphore signal.
+		trace value: 'Process 2b continues' ] forkAt: 20.
+	
+	trace value: 'Original process pre-delay'.
+	1 milliSecond wait.
+	trace value: 'Original process post-delay'.   
+]]]
+
+[[[
+	@40 Original process pre-delay
+	@30 Process 1a waits for signal on semaphore
+	@20 Process 2a signals semaphore
+	@30 Process 1b received signal and terminates
+	@20 Process 2b continues and terminates
+	@40 Original process post-delay
+]]]
+
+Yielding will never allow a lower-priority-process to run.  
+For a lower-priority process to run, the current process needs to suspend itself (with the way to get woken up later) rather than yield.
+
+
+
+
+!!! About the primitive in yield method
+If you look at the exact definition of the ==yield== message in Pharo, you can see that it contains an annotation mentionning that this is primitive. The primitive is an optimisation.
+
+[[[
+ProcessScheduler >> yield
+	| semaphore |
+	<primitive: 167>
+	semaphore := Semaphore new.
+	[semaphore signal] fork.
+	semaphore wait.
+]]]
+
+When this method is executed, either the primitive puts the calling process to the back of its run queue, or (if the primitive is not implemented), it performs what we explained earlier and that is illustrated by the Figure *@yield*.
+
+Note that all the primitive does is to circumvent having to create a semaphore, to create, to schedule a process, and to signal and to wait to move a process to the back of its run queue. This is worthwhile because most of the time a process's run queue is empty, it being the only runnable process at that priority.
+
+[[[
+| yielded |
+yielded := false.
+[ yielded := true ] fork.
+Processor yield.
+yielded
+>>> true
+]]]
+
+In the provious snippet, the expression ==Processor yield== gives a chance to the created process to run. Note that the example does not show precisely if  the UI thread was executed first after the ==yield== and that in its logic it yields periodically to let lower processes running or if it was just put at the end of its run queue.
+
+
+Here is the code of the primitive: if the run queue of the active process priority is empty nothing happens, else the active process is added as last item in the run queue corresponding to its priority and the highest priority process is run.
+
+[[[
+InterpreterPrimitives >> primitiveYield
+	"Primitively do the equivalent of Process>yield, avoiding the overhead of a fork and a wait in the standard implementation."
+
+	| scheduler activeProc priority processLists processList |
+	scheduler := self schedulerPointer.
+	activeProc := objectMemory fetchPointer: ActiveProcessIndex ofObject: scheduler.
+	priority := self quickFetchInteger: PriorityIndex ofObject: activeProc.
+	processLists := objectMemory fetchPointer: ProcessListsIndex ofObject: scheduler.
+	processList := objectMemory fetchPointer: priority - 1 ofObject: processLists.
+
+	(self isEmptyList: processList) ifFalse:
+		[self addLastLink: activeProc toList: processList.
+		 self transferTo: self wakeHighestPriority]
+]]]
 
 !!! About processPreemption and VM
 
 Now we will discuss a bit the settings of the VM regarding process preemption: What exactly happens when a process is 
-preempted by a process of a higher priority, and which process is scheduled after the execution of a yield.
+preempted by a process of a higher priority, and which process is scheduled after the execution of a ==yield== message.
 The following is based on an answer of E. Miranda on the VM mailing-list. 
 
-The virtual has a setting to change the behavior of process preemption and especially which process gets
-resumed. In Pharo the setting is true. It means that the interrupted process will be added to the end of the queue and giving other 
+The virtual machine has a setting to change the behavior of process preemption and especially which process gets
+resumed once the preempting process terminates. 
+
+In Pharo the setting is true. It means that the interrupted process will be added to the end of the queue and giving other 
 processes a chance to execute themselves without having to have an explicit ==yield==.
 
 [[[
@@ -445,26 +482,25 @@ Smalltalk vm processPreemptionYields
 >>> true
 ]]]
 
-If  ==Smalltalk processPreemptionYields== returns false then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
+If  ==Smalltalk vm processPreemptionYields== returns false then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
 It means that it will the first one of this priority to be resumed.
 
-Note that when a process waits on a semaphore, it is removed from its run queue. 
+Note that when a process waits on a semaphore, it is removed from its run queue.
 When a process resumes, it always gets added to the back of its run queue.
-The ==processPreemptionYields== setting does not change anything.  
+The ==processPreemptionYields== setting does not change anything.
 
 
 !!! Comparing the two semantics
 
-The two following examples show the difference between the two regimes that can be controlled by the ==processPreemptionYields== setting.
+The two following examples show the difference between the two semantics that can be controlled by the ==processPreemptionYields== setting.
 
 
-!!!! First example
+!!!! First example: two equal processes
 
-Step 1. First we create two processes at a lower priority than the active process and at a priority where there are no other processes.
-The first expression will find an empty priority level at a priority lower than the active process.
-Step 2. Then create two processes at that priority and check that their order in the list is the same as the order in which they were created.
-Step 3. Set the boolean to indicate that this point was reached and block on a delay, allowing the processes to run to termination.
-Check that the processes have indeed terminated.
+- Step 1. First we create two processes at a lower priority than the active process and at a priority where there are no other processes. The first expression will find an empty priority level at a priority lower than the active process.
+- Step 2. Then create two processes at that priority and check that their order in the list is the same as the order in which they were created.
+- Step 3. Set the boolean to indicate that this point was reached and block on a delay, allowing the processes to run to termination. Check that the processes have indeed terminated.
+
 [[[
 | run priority process1 process2 |
 run := true.
@@ -501,8 +537,8 @@ self assert: (Processor waitingProcessesAt: priority) first == process1.
 self assert: (Processor waitingProcessesAt: priority) last == process2.
 
 "Now block on a delay, allowing the first one to run, spinning in its loop.
-When the delay ends the current process (the one executing the code snippet) will preempt process1, 
-because process1 is at a lower priority."
+When the delay ends the current process (the one executing the code snippet) 
+will preempt process1, because process1 is at a lower priority."
 
 (Delay forMilliseconds: 50) wait.
 
@@ -520,7 +556,7 @@ Smalltalk vm processPreemptionYields
 "step3"
 run := false.
 (Delay forMilliseconds: 50) wait.
-	"Check that they have indeed terminated"
+"Check that they have indeed terminated"
 self assert: (Processor waitingProcessesAt: priority) isEmpty
 ]]]
 
@@ -528,14 +564,12 @@ Run the above after trying both ==Smalltalk vm processPreemptionYields: false== 
 
 What the setting controls is what happens when a process is preempted by a higher-priority process. 
 The ==processPreemptionYields = true== does an implicit yield of the preempted process. 
-It then changes the order of the run queue by putting the preempted process at the end of the run queue letting a chance to other processes
+It changes the order of the run queue by putting the preempted process at the end of the run queue letting a chance to other processes
 to execute. 
-
-
 
 !!! Conclusion
 
-This chapter presents some advanced part of the scheduler and we hope that it gives a better picture of the scheduling behavior
+This chapter presents some advanced parts of the scheduler and we hope that it gives a better picture of the scheduling behavior
 and in particular the preemption of the current running process by a process of higher priority as well as the way yielding the control is implemented. 
 
 
