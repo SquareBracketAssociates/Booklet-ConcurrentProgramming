@@ -326,10 +326,10 @@ They are scheduled and executed one after the other.
 Then it terminates and ==p2== gets the control and executes. 
 It displays its output and get terminated.
 
-During the execution of one of the process nothing forces it to relinquish computation.
+During the execution of one of the processes nothing forces it to relinquish computation.
 Therefore it executes until it finishes. 
 It means that if a process has an endless loop it will not release the execution 
-except if it is preempted by a process of higher priority (see Chapter scheduler's principle )
+except if it is preempted by a process of higher priority (see Chapter scheduler's principle).
 
 
 !!!! Using yield
@@ -353,7 +353,7 @@ We will come back to yield in future chapters.
 
 Let us revisit what we learned in this chapter.
 
-- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. In addition, we should pay attention since a process can be preempted by a process of higher prioriy, the semantics of the preemption (I.e., how the preempted process is rescheduled) has an impact on the process execution order. We will discuss this is in depth in following chapters.
+- Processes with the same priority are executed in the same order they were added to scheduled process list. In fact processes within the same priority should collaborate to share the execution amongst themselves. In addition, we should pay attention since a process can be preempted by a process of higher prioriy, the semantics of the preemption (i.e., how the preempted process is rescheduled) has an impact on the process execution order. We will discuss this is in depth in following chapters.
 - Processes should explicitly give back the computation to give a chance to other pending processes of the same priority to execute. The same remark as above works here too.
 % Imagine a long process not yielding its execution, this process may be interrupted by a process of higher priority and depending on the semantics of the preemption this process may not be the one that will continue to be executed.
 - A process should use ==Processor yield== to give an opportunity to run to the other processes with the same priority. In this case, the  yielding process is moved to the end of the list to give a chance to execute all the pending processes (see below Scheduler's principles).
