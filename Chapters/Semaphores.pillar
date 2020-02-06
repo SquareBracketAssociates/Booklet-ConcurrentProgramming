@@ -4,7 +4,7 @@
 
 Often we encounter situations where we need to synchronize processes.
 For example, imagine that you only have one pen and that there are several writers wanting to use it.
-You will wait for the pen and once the pen is released, you will be able to access and use it.
+A writer will wait for the pen and once the pen is free. He will be able to access and use it concurrently.
 Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen.
 When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
 Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
@@ -12,7 +12,7 @@ In fact, this pen is a semaphore.
 
 Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
 A great book proposes different synchronization challenges that are solves with Semaphore: ''The Little Book of Semaphores''.
-It is clearly a nice further readings.
+It is clearly a nice further reading.
 
 !!! Understanding semaphores
 
