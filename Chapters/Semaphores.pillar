@@ -102,21 +102,21 @@ To understand the interplay between wait and signal we propose the following exa
 Can you guess what is the displayed information?
 
 [[[
-	| semaphore p1 p2 p3 |
-	semaphore := Semaphore new. 
-	p1 := [ ' Pharo ' trace ] forkAt: 30. 
+| semaphore p1 p2 p3 |
+semaphore := Semaphore new. 
+p1 := [ ' Pharo ' trace ] forkAt: 30. 
 
-	p2 := [' is ' trace.
-			semaphore wait.
-			' super ' trace. 
-			semaphore signal.
-			' p2 finished ' trace ] forkAt: 35.
+p2 := [' is ' trace.
+	semaphore wait.
+	' super ' trace. 
+	semaphore signal.
+	' p2 finished ' trace ] forkAt: 35.
 
-	p3 := [' really ' trace. 
-			semaphore signal.
-			' cool ' trace.
-			semaphore wait.
-			' and powerful! ' trace ] forkAt: 33
+p3 := [' really ' trace. 
+	semaphore signal.
+	' cool ' trace.
+	semaphore wait.
+	' and powerful! ' trace ] forkAt: 33
 ]]]
 
 
@@ -134,7 +134,7 @@ Let us describe what's happened:
 - Finally ==p1== is executed, prints ==Pharo== and terminates.
 
 We really suggest to play with different priorities and predict the behavior.
-Note that this scenario pays attention that the processes are lower priority that the UI process that is refreshing the display. 
+Note that this scenario pays attention that the processes are lower priority that the UI process that is refreshing the display.
 In addition as we will see later, we do not have processes with the same priority since the preemption may impact the order of execution. 
 
 
@@ -143,17 +143,17 @@ Let us imagine that we have the following two processes of different priorities 
 We would like to show the influence of ==signal== on the scheduling of such processes.
 
 [[[
-	| trace semaphore p1 p2 |
-	semaphore := Semaphore new.
-	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
-	p1 := [
-	   trace value: 'Process 1a waits for signal on semaphore'. 
-	   semaphore wait.
-	   trace value: 'Process 1b received signal and terminates' ] forkAt: 20.
-	p2 := [
-	   trace value: 'Process 2a up to signalling semaphore'. 
-	   semaphore signal.
-	   trace value: 'Process 2b continues and terminates' ] forkAt: 30.
+| trace semaphore p1 p2 |
+semaphore := Semaphore new.
+trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+p1 := [
+	trace value: 'Process 1a waits for signal on semaphore'. 
+	semaphore wait.
+	trace value: 'Process 1b received signal and terminates' ] forkAt: 20.
+p2 := [
+	trace value: 'Process 2a up to signalling semaphore'. 
+	semaphore signal.
+	trace value: 'Process 2b continues and terminates' ] forkAt: 30.
 ]]]
 
 Here the higher priority process (==p2==) produces a trace, signals the semaphore and finishes. 
@@ -169,17 +169,17 @@ Then the lower priority process produces a trace, waits and since the semaphore 
 Now let us swap the prioriy.
 
 [[[
-	| trace semaphore p1 p2 |
-	semaphore := Semaphore new.
-	trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
-	p1 := [
-	   trace value: 'Process 1a waits for signal on semaphore'. 
-	   semaphore wait.
-	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
-	p2 := [
-	   trace value: 'Process 2a up to signalling semaphore'. 
-	   semaphore signal.
-	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
+| trace semaphore p1 p2 |
+semaphore := Semaphore new.
+trace := [ :message | ('@{1} {2}' format: { Processor activePriority. message }) crTrace ].
+p1 := [
+	trace value: 'Process 1a waits for signal on semaphore'.
+	semaphore wait.
+	trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
+p2 := [
+	trace value: 'Process 2a up to signalling semaphore'.
+	semaphore signal.
+	trace value: 'Process 2b continues and terminates' ] forkAt: 20.
 ]]]
 
 Here the higher priority process (==p1==) produces trace and waits on the semaphore. 
@@ -202,20 +202,19 @@ We will go over this point in the next Chapter.
 !!! Prearmed semaphore
 
 A process wanting a resource protected by a semaphore does not have to be systematically put on the waiting list.
-There are situations where if it would be the case, the system would be blocked forever because no process could signal
-the semaphore: an no pending process would be resumed. 
+There are situations where the system would be blocked forever because no process can signal
+the semaphore: no pending process would be resumed.
 
-A semaphore can be prearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages. 
+To handle such a case, a semaphore can be prearmed: it can be signalled (receives ==signal== messages) before receiving ==wait== messages.
 In such a case, a process requesting to access the resources will just proceed and be scheduled without first being queued to the waiting list.
 
-A semaphore holds a counter of signals that it receives but did not lead to a process execution.
-It will not block the process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
+As an implementation note, a semaphore holds a counter of the signals that it received but did not lead to a process execution.
+It will not block a process sending a ==wait== message if it has got  ==signal== messages that did not led to scheduling a waiting process.
 
-!!!! Example 
-
+!!!! Example
 Let us modify slightly the previous example.
 We send a ==signal== message to the semaphore prior to creating the processes.
-The semaphore is then prearmed. 
+The semaphore is then prearmed.
 
 [[[
 | trace semaphore p1 p2 |
@@ -255,10 +254,10 @@ sema isSignaled
 ]]]
 
 
-!!! forMutualExclusion
+!!! Semaphore forMutualExclusion
 
-Sometimes we need to ensure that a section of code is only executed when no other process is executing it or that no other process
-will execute it while a first process is already. 
+Sometimes we need to ensure that a section of code is executed by only a single process at a time i.e.,
+no other process will enter it.
 We want to make sure that only one process at a time executes a section of code. 
 This code section is called a ''critical section''. 
 
@@ -266,11 +265,11 @@ The class ==Semaphore== offers the message ==critical: aBlock== to define a crit
 It evaluates aBlock only if the receiver is not currently in the process of running the ==critical:== message. 
 If the receiver is currently executed, aBlock will be executed after the other ==critical:== message is finished.
 
-To use a critical, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==.
-It makes sure that the first execution of the critical section will pass without get blocked (,i.e., put on the semaphore waiting list waiting for a wait).
+To use a critical section, first the semaphore should be prearmed using the class creation message ==forMutualExclusion==.
+It makes sure that the first execution of the critical section will pass without getting blocked (i.e., put on the semaphore waiting list and waiting for a ==signal== message).
 
-Here is an example of critical section use: The memory logger makes sure that when several processes work concurrently, the execution of the different processes does not mess the recording of the item addition. Similarly, the logger makes sure that when only one process can resett the recordings.
-
+Here is an example of critical section use: The memory logger makes sure that when several processes work concurrently, the execution of the different processes does not mess the recording of the item addition. 
+Similarly, the logger makes sure that when only one process can reset the recordings.
 
 [[[
 MemoryLogger >> nextPut: aSignal
@@ -299,8 +298,8 @@ deadlockSem := Semaphore new.
 deadlockSem critical: [ deadlockSem critical: [ 'Nested passes!' crTrace] ]
 ]]]
 
-Mutexes (also named ==RecursionLock==) solves this problem.
-This is why a ==Mutex== and a semaphore are not interchangeable.
+Mutexes (also named RecursionLock) solve this problem.
+This is why a Mutex and a Semaphore are not interchangeable.
 So let's see what is a Mutex.
 
 !!! Mutex 
