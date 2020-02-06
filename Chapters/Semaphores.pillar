@@ -7,17 +7,18 @@ For example, imagine that you only have one pen and that there are several write
 A writer will wait for the pen and once the pen is free. He will be able to access and use it concurrently.
 Now since multiple people can wait for the pen, the waiters are ordered in a waiting list associated with the pen.
 When the current writer does not need the pen anymore, he will say it and the next writer in the queue will be able to use it.
-Writers needed to use the pen just register to the pen: they are added at the end of the waiting list.
+Writers needing to use the pen just register to the pen: they are added at the end of the waiting list.
 In fact, this pen is a semaphore. 
 
 Semaphores are the basic bricks for concurrent programming and even the scheduler itself uses them. 
-A great book proposes different synchronization challenges that are solves with Semaphore: ''The Little Book of Semaphores''.
+A great book proposes different synchronization challenges that are solved with Semaphore: ''The Little Book of Semaphores''.
 It is clearly a nice further reading.
 
 !!! Understanding semaphores
 
-A Semaphore is an object used to synchronize multiple processes.
-A semaphore is often used to make sure that a resource is only be accessed by a single process at the time.
+A ''semaphore'' is an object used to synchronize multiple processes.
+A semaphore is often used to make sure that a resource is only accessed by a single process at the time.
+It is also said that the semaphore protects the resources.
 
 A process that wants to access to a resource will declare it to the semaphore protecting the resources by sending
 to the semaphore the message ==wait==. 
@@ -30,8 +31,8 @@ Here are the steps illustrating a typical scenario:
 # The semaphore protects resources: P0 is using the resources. Processes P1, P2, P3 are waiting for the resources (Fig. *@Sema1*). They are queued in the semaphore waiting list.
 # The process P4 wants to access the resources: it sends ==wait== to the semaphore (Fig. *@Sema2*).
 # P4 is added to the waiting list (Fig. *@Sema3*) - it passes from the executing to the waiting state.
-# P0 has finished to use the resources: it send the message ==signal== it to the semaphore (Fig. *@Sema4*).
-# The semaphore resumes the first waiting process, here P1 (Fig. *@Sema5*).
+# P0 has finished to use the resources: it sends the message ==signal== to the semaphore (Fig. *@Sema4*).
+# The semaphore resumes the first waiting process of its pending queue, here P1 (Fig. *@Sema5*).
 # The resumed process, P1, become runnable and will be scheduled by the scheduler.
 
 
@@ -56,11 +57,11 @@ Each semaphore maintains a linked-list of suspended processes, and releases them
 Unlike the ==ProcessorScheduler==, a semaphore does not pay attention to the priority of a process, it dequeues processes in the order in which they waited on the semaphore.
 The dequeued process is resumed and as such it is added in the waiting list of the scheduler.
 
-When a process sends a ==wait== message to the semaphore, if the waiting list if empty then the process is executed. 
+When a process sends a ==wait== message to the semaphore, if the waiting list is empty then the process is directly scheduled. 
 
 !!! An example
 Before continuing, let us play with semaphores.
-Open a transcript and inspect the following piece of code: It schedules two processes and make them both waiting for a semaphore. 
+Open a transcript and inspect the following piece of code: It schedules two processes and make them both wait on a semaphore.
 
 [[[
 | semaphore |
@@ -123,9 +124,9 @@ You should obtain ==is  really  super  p2 finished  cool  and powerful!  Pharo =
 
 Let us describe what's happened: 
 - The three processes are created and scheduled.
-- The process with the highest priority ==p2== is executed. It prints ==is== and waits on the semaphore. 
-- ==p2== is not runnable anymore. 
-- The next highest priority process ==p3== is scheduled, it prints ==really== and signals the semaphore.
+- The process with the highest priority, ==p2==, is executed. It prints ==is== and waits on the semaphore.
+- ==p2== is not runnable anymore.
+- The next highest priority process, ==p3==, is scheduled, it prints ==really== and signals the semaphore.
 - The semaphore is signaled so it schedules its waiting process ==p2==. Since ==p2== has higher priority than ==p3==, it is executed.
 - ==p2== prints ==super==, and it signals the semaphore.
 - There is no process waiting on the semaphore and in addition, ==p2== is the highest priority process so it continues to execute, prints ==p2 finished== and terminates.
@@ -133,7 +134,7 @@ Let us describe what's happened:
 - Finally ==p1== is executed, prints ==Pharo== and terminates.
 
 We really suggest to play with different priorities and predict the behavior.
-Note that the scenario payed attention that the processes are lower priority that the UI process that is refresghind the display. 
+Note that this scenario pays attention that the processes are lower priority that the UI process that is refreshing the display. 
 In addition as we will see later, we do not have processes with the same priority since the preemption may impact the order of execution. 
 
 
