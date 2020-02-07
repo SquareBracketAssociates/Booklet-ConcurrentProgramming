@@ -148,6 +148,16 @@ The created process is ==runnable==.
 It will be executed when the process scheduler schedules it as the current running process and gives it the flow of control.
 At this moment the block of this process will be executed.
 
+Here is the definition of the method ==fork==.
+
+[[[
+BlockClosure >> fork
+	"Create and schedule a Process running the code in the receiver."
+
+	^ self newProcess resume
+]]]
+
+
 !!!! Creating a waiting process
 As you see on Figure *@processStates* a process can be in a waiting state.
 It means that the process is blocked waiting for a change to happen (usually waiting for a semaphore to be signalled).

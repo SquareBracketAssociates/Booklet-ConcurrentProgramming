@@ -7,14 +7,12 @@ Let us start with the class ==Process==.
 
 !!! Revisiting the class ==Process==
 
-
-
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
 - suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
 - myList: the process scheduler list of processes to which the suspended process belongs to. This list is also called it run queue and it is only for suspended processes.
 
-You can do the little following tests to see the state of a process.
+You can do the following tests to see the state of a process.
 
 The first example opens an inspector in which you can see the state of the executed process. 
 
@@ -32,7 +30,7 @@ Processor activeProcess suspendedContext isNil.
 >>> true
 ]]]
 
-Now a suspended process suspended context should not be nil, obviously.
+Now a suspended process suspended context should not be nil, since it should have a stack of the suspended program.
 [[[
 ([ 1 + 2 ] fork suspend ; suspendedContext) isNotNil
 ]]]
@@ -41,10 +39,10 @@ Now a suspended process suspended context should not be nil, obviously.
 The class ==Process== is a subclass of the class ==Link==.
 A link is an element of a linked list (class ==LinkedList==).
 This design is to make sure that processes can be elements in a linked list without wrapping them in a ==Link== instance.
-Note that this linked list is tailored for the Process scheduler logic. Better use another one if you need one.
+Note that this ''process'' linked list is tailored for the process scheduler logic.
+This ''process'' linked list is for internal usage. If you need a linked link, better uses another one if you need one.
 
 !!!! States
-
 We saw previously the different states a process can be in.
 We also saw semaphores which suspend and resume suspended processes.
 We revisit the different states of a process by looking its interaction with the process scheduler and 
@@ -53,25 +51,25 @@ semaphores as shown in *@ProcessorStateSchedulerSemaphore* :
 
 - ""executing"" - the process is currently executing.
 - ""runnable"" - the process is scheduled. This process is in one of the priority lists of the scheduler. It may be turned into the executing state by the scheduler.
-- ""terminated"" - the process run and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
-- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists or in a semaphore list. The process can become runnable sending it the ==resume== message.
+- ""terminated"" - the process ran and finished its execution. It is not managed anymore by the scheduler. It cannot be executed anymore.
+- ""suspended"" - the process is not managed by the scheduler: This process is not in one of the scheduler lists or in a semaphore list. The process can become runnable sending it the ==resume== message. This state is reached when the process received the message ==suspend==.
 - ""waiting"" - the process is waiting on a semaphore waiting list. It is not managed by the scheduler. The process can become runnable when the semaphore releases it.
 
 +Revisiting process (green thread) lifecycle and states.>file://figures/StateSchedulerSemaphore2.pdf|label=ProcessorStateSchedulerSemaphore+
 
 
-!!! Looking at some core process primitives 
+!!! Looking at some core process primitives
+It is worth to look at the way ==Process== key methods are implemented.
 
-It is worth to look at the way ==Process== key methods are implemented. 
-
-The message ==suspend== is a primitive and implemented at the VM level. 
-Since the process list (myList) refers to one of the scheduler priority list in which it is, we see that the message ==suspend== effectively
+The method ==suspend== is a primitive and implemented at the VM level.
+Since the process list (==myList==) refers to one of the scheduler priority list in which it is, 
+we see that the message ==suspend== effectively remove the process from the scheduler list.
 
 [[[
 Process >> suspend
-	"Primitive. Stop the process that the receiver represents in such a way 
-	that it can be restarted at a later time (by sending the receiver the 
-	message resume). If the receiver represents the activeProcess, suspend it. 
+	"Stop the process that the receiver represents in such a way
+	that it can be restarted at a later time (by sending the receiver the
+	message resume). If the receiver represents the activeProcess, suspend it.
 	Otherwise remove the receiver from the list of waiting processes.
 	The return value of this method is the list the receiver was previously on (if any)."
 
@@ -80,11 +78,11 @@ Process >> suspend
 	myList ifNil: [ ^ nil ].
 	oldList := myList.
 	myList := nil.
-	oldList remove: self ifAbsent: [  ].
+	oldList remove: self ifAbsent: [ ].
 	^ oldList
 ]]]
 
-The ==resume== method comment is less interesting. 
+The ==resume== method is defined as follows:
 [[[
 Process >> resume
 	"Allow the process that the receiver represents to continue. Put 
@@ -98,10 +96,9 @@ Process >> resume
 
 [[[
 Process >> primitiveResume
-	"Primitive. Allow the process that the receiver represents to continue. Put 
+	"Allow the process that the receiver represents to continue. Put 
 	the receiver in line to become the activeProcess. Fail if the receiver is 
-	already waiting in a queue (in a Semaphore or ProcessScheduler). 
-	Essential. See Object documentation whatIsAPrimitive."
+	already waiting in a queue (in a Semaphore or ProcessScheduler)."
 
 	<primitive: 87>
 	self primitiveFailed
@@ -122,16 +119,9 @@ InterpreterPrimitives >> primitiveResume
 	self resume: proc preemptedYieldingIf: preemptionYields
 ]]]
 
-Now we can have a look at the implementation of ==fork== and ==newProcess==. 
-
-[[[
-BlockClosure >> fork
-	"Create and schedule a Process running the code in the receiver."
-
-	^ self newProcess resume
-]]]
-
-The method ==newProcess== creates a process by reifying a new block as a stack representation. The responsibility of this new block is to execute the receiver and terminates the process.
+Now we can have a look at the implementation of ==newProcess==.
+The method ==newProcess== creates a process by reifying a new block as a stack representation.
+The responsibility of this new block is to execute the receiver and terminates the process.
 
 [[[
 BlockClosure >> newProcess
