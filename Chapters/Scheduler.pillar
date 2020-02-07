@@ -139,7 +139,7 @@ BlockClosure >> newProcess
 !!! Priorities
 A runnable process has a priority. 
 It is always executed before a process of an inferior priority.
-Remember the examples of previous chapter:
+Remember the examples of previous chapters:
 
 [[[
 	| trace |
@@ -161,8 +161,7 @@ Remember the examples of previous chapter:
 @12 3
 ]]]
 
-This code snippet shows that even if processes relinquishes execution (via a message ==yield==), the processes of lower priority are not scheduled before 
-the process of higher priority got terminated.
+This code snippet shows that even if processes relinquish execution (via a message ==yield==), the processes of lower priority are not scheduled before the process of higher priority got terminated.
 
 @@note In the case of a higher priority level process preempting a process of lower priority, when the preempting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. Currently in Pharo, the interrupted process is put at the end of the waiting queue, while an alternative is to resume the interrupted process to give it a chance to continue its task.
 
@@ -225,15 +224,11 @@ Then ==p1== terminates and the scheduler does not schedule ==p2== but ==p3==.
 	@20 Process 2b continues and terminates
 ]]]
 
-This behavior can be surprising. 
-In fact the Pharo virtual machine offers two possibilities as we show later.
-This is due to historical reason. In old versions of the virtual machine, the preemption was implementing this behavior: it was acting as if an impllcit yield was happening, moving the preempted process to the end of its run queue on preemption return. 
-
-The current Pharo virtual machine supports another semantics where the preempted process is executed first then the other processes in the run queue. So far Pharo did not use this new semantics. 
-
-It does not mean it will not because it is super easy to use it. The challenge is that all the process logic of the system should be reassessed to understand if some processes that are not blocking  with the current semantics will not block with the new semantics.
-
-
+This behavior can be surprising.
+In fact the Pharo virtual machine offers two possibilities as we will show later.
+In one, when a preempting process terminates, the preempted process is managed as if an implicit yield happened, moving the preempted process to the end of its run queue on preemption return and scheduling the following pending process.
+In another one, when a preempting process terminates, the preempted process is the one that get scheduled (it does not move at the end of the pending list).
+By default, Pharo uses the first semantics.
 
 
 !!! Understanding ==yield==
