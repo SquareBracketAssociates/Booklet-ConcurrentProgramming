@@ -356,7 +356,7 @@ Mutex >> critical: aBlock
 	activeProcess == owner ifTrue: [ ^aBlock value ].
 	^ semaphore critical: [
 		owner := activeProcess.
-		aBlock ensure: [ owner := nil ]].
+		aBlock ensure: [ owner := nil ]]
 ]]]
 
 
@@ -368,12 +368,13 @@ We take two perspectives: how the ==Semaphore== class is defined within Pharo an
 
 !!!! Pharo's implementation.
 
-A semaphore keeps a number of excess signals: the amount of signals that did not lead to schedule a waiting process.
-If the number of waiting process on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution. 
+A semaphore keeps a number of excess signals: the amount of signals that did not lead to schedule a waiting process. The message ==wait== and ==signal== maintain this information: as the implementations below show it, a ==signal== will increase the excess number and a ==wait== will decrease it.
+
+If the number of waiting processes on a semaphore is smaller than the number allowed to wait, sending a ==wait== message is not blocking and the process continues its execution.
 On the contrary, the process is stored at the end of the pending list and we will be scheduled when the semaphore will have received enough signals.
 
-The fact that the semaphore waiting list is a linked list has an impact on the semaphore semantics. It makes sure that waiting processes are managed
-in a first in first out manner. 
+The fact that the semaphore waiting list is a linked list has an impact on the semaphore semantics.
+It makes sure that waiting processes are managed in a first in first out manner.
 
 While conceptually a semaphore has a list and a counter. 
 At the Pharo implementation level, the class ==Semaphore== inherits from the class ==LinkedList==, so the waiting process list is 'directly' the semaphore itself. Since ==Process== inherits from ==Link== (elements that can be added to linked list), they can be directly added to the semaphore without being wrapped by an element object. This is a simplification for the virtual machine.
