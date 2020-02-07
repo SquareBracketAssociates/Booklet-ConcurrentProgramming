@@ -298,7 +298,7 @@ We saw that the message ==signal== does not transfer execution unless the waitin
 It just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
 This respects the preemption semantics between processes of different priorities.
 
-When you execute an expression you should always consider that you execute this piece of code interactive within the UI thread. 
+When you execute an expression you should always consider that you execute this piece of code interactive within the UI process.
 
 [[[
 | yielded |
@@ -319,7 +319,7 @@ yielded
 >>> true
 ]]]
 
-This expression returns true because ==fork== creates a process with the UI thread priority (40) since the code is executed interactively.
+This expression returns true because ==fork== creates a process with the UI process priority (40) since the code is executed interactively.
 
 [[[
 | yielded |
@@ -333,9 +333,9 @@ p priority
 
 
 
-The following illustrates this point using the UI thread. 
+The following illustrates this point using the UI process. 
 Indeed when you execute interactively a code snippet, the execution happens in the UI process (also called UI thread) 
-with a priority of 40. 
+with a priority of 40.
 
 [[[
 	| trace semaphore p1 p2 |
@@ -450,11 +450,11 @@ InterpreterPrimitives >> primitiveYield
 		 self transferTo: self wakeHighestPriority]
 ]]]
 
-!!! About processPreemption and VM
+!!! About processPreemption settings
 
 Now we will discuss a bit the settings of the VM regarding process preemption: What exactly happens when a process is 
 preempted by a process of a higher priority, and which process is scheduled after the execution of a ==yield== message.
-The following is based on an answer of E. Miranda on the VM mailing-list. 
+The following is based on an answer of E. Miranda on the VM mailing-list.
 
 The virtual machine has a setting to change the behavior of process preemption and especially which process gets
 resumed once the preempting process terminates. 
