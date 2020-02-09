@@ -28,7 +28,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2020-01-07 21:10:34 +0000</string>
+	<string>2020-02-09 20:48:43 +0000</string>
 	<key>Modifier</key>
 	<string>ducasse</string>
 	<key>MovementHandleVisible</key>
@@ -96,7 +96,7 @@
 			<key>BackgroundGraphic</key>
 			<dict>
 				<key>Bounds</key>
-				<string>{{0, 0}, {756.5, 636}}</string>
+				<string>{{0, 0}, {757, 636}}</string>
 				<key>Class</key>
 				<string>GraffleShapes.CanvasBackgroundGraphic</string>
 				<key>ID</key>
@@ -122,7 +122,7 @@
 			<key>CanvasOrigin</key>
 			<string>{0, 0}</string>
 			<key>CanvasSize</key>
-			<string>{756.5, 636}</string>
+			<string>{757, 636}</string>
 			<key>CanvasSizingMode</key>
 			<integer>1</integer>
 			<key>ColumnAlign</key>
@@ -238,7 +238,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>23</integer>
+						<integer>22</integer>
 					</dict>
 					<key>ID</key>
 					<integer>5</integer>
@@ -269,12 +269,14 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>27</integer>
+						<integer>26</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -290,7 +292,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>23</integer>
+						<integer>22</integer>
 					</dict>
 					<key>ID</key>
 					<integer>6</integer>
@@ -322,12 +324,14 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>24</integer>
+						<integer>23</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -343,7 +347,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>23</integer>
+						<integer>22</integer>
 					</dict>
 					<key>ID</key>
 					<integer>7</integer>
@@ -375,12 +379,14 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -396,7 +402,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>23</integer>
+						<integer>22</integer>
 					</dict>
 					<key>ID</key>
 					<integer>8</integer>
@@ -428,17 +434,19 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>26</integer>
+						<integer>25</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{373.35166952054794, 455.91844512195121}, {45, 30}}</string>
+					<string>{{373.35372969508171, 455.9184455871582}, {45, 30}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -503,7 +511,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>24</integer>
+						<integer>23</integer>
 					</dict>
 					<key>ID</key>
 					<integer>10</integer>
@@ -534,17 +542,19 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{364.53513431909528, 346.07750864154434}, {57, 30}}</string>
+					<string>{{364.79536718431268, 346.48231471857019}, {57, 30}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -613,7 +623,7 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>26</integer>
+						<integer>25</integer>
 					</dict>
 					<key>ID</key>
 					<integer>12</integer>
@@ -644,12 +654,14 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>24</integer>
+						<integer>23</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -665,10 +677,10 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 					<key>ID</key>
-					<integer>14</integer>
+					<integer>13</integer>
 					<key>Points</key>
 					<array>
 						<string>{130.5, 381}</string>
@@ -697,17 +709,19 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>27</integer>
+						<integer>26</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{197.5643360716164, 392.67870043899831}, {72, 30}}</string>
+					<string>{{197.73890013437403, 392.77907403742324}, {72, 30}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -715,11 +729,11 @@
 					<key>Flow</key>
 					<string>Resize</string>
 					<key>ID</key>
-					<integer>15</integer>
+					<integer>14</integer>
 					<key>Line</key>
 					<dict>
 						<key>ID</key>
-						<integer>16</integer>
+						<integer>15</integer>
 						<key>Offset</key>
 						<real>20.895578384399414</real>
 						<key>Position</key>
@@ -772,10 +786,10 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>27</integer>
+						<integer>26</integer>
 					</dict>
 					<key>ID</key>
-					<integer>16</integer>
+					<integer>15</integer>
 					<key>Points</key>
 					<array>
 						<string>{292.5, 480}</string>
@@ -804,17 +818,19 @@
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{278.85309092039324, 390.57928748029252}, {84, 47}}</string>
+					<string>{{278.82251350877829, 390.12848101976715}, {84, 47}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -822,11 +838,11 @@
 					<key>Flow</key>
 					<string>Resize</string>
 					<key>ID</key>
-					<integer>17</integer>
+					<integer>16</integer>
 					<key>Line</key>
 					<dict>
 						<key>ID</key>
-						<integer>18</integer>
+						<integer>17</integer>
 						<key>Offset</key>
 						<real>-37.210365295410156</real>
 						<key>Position</key>
@@ -880,10 +896,10 @@ by VM}</string>
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 					<key>ID</key>
-					<integer>18</integer>
+					<integer>17</integer>
 					<key>Points</key>
 					<array>
 						<string>{391.5, 312}</string>
@@ -912,17 +928,19 @@ by VM}</string>
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>26</integer>
+						<integer>25</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{164.81686031967831, 298.91904017031965}, {72, 30}}</string>
+					<string>{{165.29712463457662, 298.70924157813937}, {72, 30}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -930,11 +948,11 @@ by VM}</string>
 					<key>Flow</key>
 					<string>Resize</string>
 					<key>ID</key>
-					<integer>19</integer>
+					<integer>18</integer>
 					<key>Line</key>
 					<dict>
 						<key>ID</key>
-						<integer>20</integer>
+						<integer>19</integer>
 						<key>Offset</key>
 						<real>14.954268455505371</real>
 						<key>Position</key>
@@ -987,10 +1005,10 @@ by VM}</string>
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>27</integer>
+						<integer>26</integer>
 					</dict>
 					<key>ID</key>
-					<integer>20</integer>
+					<integer>19</integer>
 					<key>Points</key>
 					<array>
 						<string>{391.5, 312}</string>
@@ -1019,17 +1037,19 @@ by VM}</string>
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>26</integer>
+						<integer>25</integer>
 					</dict>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{249.41122685204584, 313.78080203773254}, {63, 30}}</string>
+					<string>{{249.3402542007193, 313.79419417580954}, {63, 30}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -1037,11 +1057,11 @@ by VM}</string>
 					<key>Flow</key>
 					<string>Resize</string>
 					<key>ID</key>
-					<integer>21</integer>
+					<integer>20</integer>
 					<key>Line</key>
 					<dict>
 						<key>ID</key>
-						<integer>22</integer>
+						<integer>21</integer>
 						<key>Offset</key>
 						<real>-11.032773971557617</real>
 						<key>Position</key>
@@ -1098,10 +1118,10 @@ by VM}</string>
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>26</integer>
+						<integer>25</integer>
 					</dict>
 					<key>ID</key>
-					<integer>22</integer>
+					<integer>21</integer>
 					<key>Points</key>
 					<array>
 						<string>{130.5, 381}</string>
@@ -1130,12 +1150,14 @@ by VM}</string>
 							<integer>1</integer>
 							<key>TailArrow</key>
 							<string>0</string>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>27</integer>
+						<integer>26</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -1151,7 +1173,7 @@ by VM}</string>
 						<real>24</real>
 					</dict>
 					<key>ID</key>
-					<integer>23</integer>
+					<integer>22</integer>
 					<key>Magnets</key>
 					<array>
 						<string>{-0.5, 0}</string>
@@ -1167,6 +1189,8 @@ by VM}</string>
 						<dict>
 							<key>CornerRadius</key>
 							<real>15</real>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Text</key>
@@ -1194,7 +1218,7 @@ by VM}</string>
 						<real>24</real>
 					</dict>
 					<key>ID</key>
-					<integer>24</integer>
+					<integer>23</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1206,6 +1230,8 @@ by VM}</string>
 						<dict>
 							<key>CornerRadius</key>
 							<real>15</real>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Text</key>
@@ -1233,7 +1259,7 @@ by VM}</string>
 						<real>24</real>
 					</dict>
 					<key>ID</key>
-					<integer>25</integer>
+					<integer>24</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1245,6 +1271,8 @@ by VM}</string>
 						<dict>
 							<key>CornerRadius</key>
 							<real>15</real>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Text</key>
@@ -1272,7 +1300,7 @@ by VM}</string>
 						<real>24</real>
 					</dict>
 					<key>ID</key>
-					<integer>26</integer>
+					<integer>25</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1284,6 +1312,8 @@ by VM}</string>
 						<dict>
 							<key>CornerRadius</key>
 							<real>15</real>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Text</key>
@@ -1311,7 +1341,7 @@ by VM}</string>
 						<real>24</real>
 					</dict>
 					<key>ID</key>
-					<integer>27</integer>
+					<integer>26</integer>
 					<key>Magnets</key>
 					<array>
 						<string>{0.25000000000000011, 0}</string>
@@ -1327,6 +1357,8 @@ by VM}</string>
 						<dict>
 							<key>CornerRadius</key>
 							<real>15</real>
+							<key>Width</key>
+							<real>2</real>
 						</dict>
 					</dict>
 					<key>Text</key>

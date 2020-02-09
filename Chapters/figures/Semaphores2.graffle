@@ -207,7 +207,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2020-02-07 14:28:58 +0000</string>
+	<string>2020-02-09 20:36:55 +0000</string>
 	<key>Modifier</key>
 	<string>ducasse</string>
 	<key>MovementHandleVisible</key>
@@ -305,6 +305,48 @@
 			<string>1 in = 1.00000 in</string>
 			<key>GraphicsList</key>
 			<array>
+				<dict>
+					<key>Bounds</key>
+					<string>{{113.62062277913094, 188.9999957755208}, {4.5, 70.559998422861099}}</string>
+					<key>Class</key>
+					<string>ShapedGraphic</string>
+					<key>ID</key>
+					<integer>30</integer>
+					<key>Style</key>
+					<dict>
+						<key>shadow</key>
+						<dict>
+							<key>Draws</key>
+							<string>NO</string>
+						</dict>
+						<key>stroke</key>
+						<dict>
+							<key>Width</key>
+							<real>0.0</real>
+						</dict>
+					</dict>
+				</dict>
+				<dict>
+					<key>Bounds</key>
+					<string>{{73.609997779130936, 188.9999957755208}, {4.5, 70.559998422861099}}</string>
+					<key>Class</key>
+					<string>ShapedGraphic</string>
+					<key>ID</key>
+					<integer>29</integer>
+					<key>Style</key>
+					<dict>
+						<key>shadow</key>
+						<dict>
+							<key>Draws</key>
+							<string>NO</string>
+						</dict>
+						<key>stroke</key>
+						<dict>
+							<key>Width</key>
+							<real>0.0</real>
+						</dict>
+					</dict>
+				</dict>
 				<dict>
 					<key>Bounds</key>
 					<string>{{242.63999457657337, 96.479997843503952}, {27, 18}}</string>
@@ -1309,11 +1351,11 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{114.35999777913094, 188.21999636292458}, {4.5, 71.87890625}}</string>
+					<string>{{114.10999777913094, 188.9999957755208}, {4.5, 70.559998422861099}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>26</integer>
+					<integer>25</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1341,7 +1383,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>27</integer>
+					<integer>26</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -1364,7 +1406,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>28</integer>
+					<integer>27</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1392,7 +1434,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>29</integer>
+					<integer>28</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -1477,7 +1519,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{112, 0}, {1168, 777}}</string>
+		<string>{{936, 134}, {1454, 1289}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
@@ -1489,12 +1531,12 @@
 		<key>Sidebar_Tab</key>
 		<integer>0</integer>
 		<key>VisibleRegion</key>
-		<string>{{-82, 0}, {936, 603}}</string>
+		<string>{{-46.980000000000068, -1.0890648383110602e-13}, {598.0162499999999, 545.65312500000005}}</string>
 		<key>ZoomValues</key>
 		<array>
 			<array>
 				<string>Canvas 1</string>
-				<real>1</real>
+				<real>2.0434227330779056</real>
 				<real>4</real>
 			</array>
 		</array>

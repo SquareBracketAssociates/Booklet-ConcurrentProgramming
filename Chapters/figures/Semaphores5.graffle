@@ -28,7 +28,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2020-02-07 14:25:30 +0000</string>
+	<string>2020-02-09 20:39:39 +0000</string>
 	<key>Modifier</key>
 	<string>ducasse</string>
 	<key>MovementHandleVisible</key>
@@ -625,11 +625,11 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{257.01427996956886, 226.33972602960182}, {4.7442856082426648, 71.839513924274257}}</string>
+					<string>{{256.51427996956886, 226.83972602960182}, {4.7442856082426648, 70.880267315837614}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>17</integer>
+					<integer>16</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -657,7 +657,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>18</integer>
+					<integer>17</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -680,7 +680,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>19</integer>
+					<integer>18</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -708,7 +708,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>20</integer>
+					<integer>19</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -740,7 +740,7 @@
 						<real>15</real>
 					</dict>
 					<key>ID</key>
-					<integer>21</integer>
+					<integer>20</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -792,7 +792,7 @@
 						<real>15</real>
 					</dict>
 					<key>ID</key>
-					<integer>22</integer>
+					<integer>21</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -835,14 +835,14 @@
 					<key>Head</key>
 					<dict>
 						<key>ID</key>
-						<integer>25</integer>
+						<integer>24</integer>
 					</dict>
 					<key>ID</key>
-					<integer>23</integer>
+					<integer>22</integer>
 					<key>Points</key>
 					<array>
-						<string>{181.4799982458353, 260.52767982716989}</string>
-						<string>{227.96002125977807, 260.19165667888666}</string>
+						<string>{181.4799982458353, 260.52708922372608}</string>
+						<string>{227.96002118855301, 260.19053304175162}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -873,7 +873,7 @@
 					<key>Tail</key>
 					<dict>
 						<key>ID</key>
-						<integer>24</integer>
+						<integer>23</integer>
 					</dict>
 				</dict>
 				<dict>
@@ -891,7 +891,7 @@
 						<real>21</real>
 					</dict>
 					<key>ID</key>
-					<integer>24</integer>
+					<integer>23</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -936,7 +936,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>25</integer>
+					<integer>24</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1019,7 +1019,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{112, 0}, {1168, 777}}</string>
+		<string>{{820, 304}, {1168, 777}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
@@ -1031,12 +1031,12 @@
 		<key>Sidebar_Tab</key>
 		<integer>0</integer>
 		<key>VisibleRegion</key>
-		<string>{{-82, 0}, {936, 603}}</string>
+		<string>{{175.75, 226}, {234, 150.75}}</string>
 		<key>ZoomValues</key>
 		<array>
 			<array>
 				<string>Canvas 1</string>
-				<real>1</real>
+				<real>4</real>
 				<real>4</real>
 			</array>
 		</array>
