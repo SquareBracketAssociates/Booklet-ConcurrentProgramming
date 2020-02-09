@@ -293,13 +293,16 @@ Here are the steps:
 +Sequences of actions caused by two processes yielding the control to the process scheduler.>file://figures/yield.pdf|width=60|label=yield+
 
 
-!!! Considering UI Thread 
+!!! Considering UI processes 
 We saw that the message ==signal== does not transfer execution unless the waiting process that received the signal has a higher priority.
 It just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
 This respects the preemption semantics between processes of different priorities.
 
-When you execute an expression you should always consider that you execute this piece of code interactive within the UI process.
 
+
+The following code snippet returns false since the forked process got the priority than the current process and the 
+current process continued its execution until the end. 
+Therefore the ==yielded== did not get a chance to be modified. 
 [[[
 | yielded |
 yielded := false.
@@ -308,8 +311,8 @@ yielded
 >>> false
 ]]]
 
-It returns false since the current process executing the code runs until the end. 
 
+Now Let us image that 
 [[[
 | yielded |
 yielded := false.
@@ -319,21 +322,24 @@ yielded
 >>> true
 ]]]
 
-This expression returns true because ==fork== creates a process with the UI process priority (40) since the code is executed interactively.
+This expression returns true because ==fork== creates a process with the same priority and the ==Processor yield== expression
+allows the forked process to execute. 
 
+
+Now let us change the priority of the forked process to be lower than the active one (here the active one is the UI process).
+The current process yields the computation but since the forked process is of lower priority, the current process will be executed before
+the forked one.
 [[[
 | yielded |
 yielded := false.
-p := [ yielded := true ] newProcess.
-p resume. 
+p := [ yielded := true ] forkAt: Processor activeProcess priority - 1.
 Processor yield.
-p priority
->>> 40 
+yielded
+>>> false
 ]]]
 
 
-
-The following illustrates this point using the UI process. 
+The following illustrates this point using the UI process.
 Indeed when you execute interactively a code snippet, the execution happens in the UI process (also called UI thread) 
 with a priority of 40.
 
