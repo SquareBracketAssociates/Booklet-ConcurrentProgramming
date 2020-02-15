@@ -33,16 +33,10 @@ the plural for the general case and the singular for the specific case.
 Sentences such as this: "P0 has finished to use the resources." should read
 "P0 has finished using the resource."
 
-In Section 2.1 Conclusion
-"Semaphores are the lower synchronisation mechanisms." should read
-"Semaphores are the lowest level synchronisation mechanisms."
 
 Chapter 3, "Scheduler's Principles" should state that
 "The Smalltalk scheduler is a real-time, cooperative, preemptive across
 priorities, non-preemptive within priorities, scheduler."
-
-The title to Chapter 4.5 "ShareQueue: a nice semaphore example" should read
-"Share*d*Queue: a nice semaphore example"
 
 Most of the paragraphs on page 49 in section 4.5 are still in French and
 need translating.

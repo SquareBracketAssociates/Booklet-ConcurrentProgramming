@@ -483,7 +483,7 @@ We will explain the ==preemptionYields== used in the last line in a future chapt
 
 !!! Conclusion
 
-Semaphores are the lower synchronisation mechanisms. 
+Semaphore is the lowest level synchronisation mechanism. 
 Pharo offers other abstractions to synchronize such as Mutexes (also named recursion lock), Monitors, shared queues, and atomic queues.
 
 

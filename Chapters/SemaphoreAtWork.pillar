@@ -160,7 +160,7 @@ Promise >> value: resultValue
 
 
 
-!!! ShareQueue: a nice semaphore example
+!!! SharedQueue: a nice semaphore example
 A ==SharedQueue== is a FIFO (first in first out) structure. It uses semaphores to protect from concurrent accesses. 
 A ==SharedQueue== is often used when a structure can be used by multiple processes that may access the same structure. 
 
@@ -176,7 +176,8 @@ Object subclass: #SharedQueue
 ]]]
 
 
-==accessProtect== est un sémaphore d’exclusion mutuelle pour l’écriture, tandis que readSync est utilisé pour la synchronisation en lecture. Ces variables sont instanciées par la méthode d’initialisation de la façon suivante :
+==accessProtect== is a mutual exclusion semaphore used to synchronise write operations while ==readSync== is a semahore used for synchronizing read operations. 
+These variables are instantiate in the initialize method as follows: 
 
 [[[
 accessProtect := Semaphore forMutualExclusion.
