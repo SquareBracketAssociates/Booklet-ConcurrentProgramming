@@ -176,7 +176,7 @@ Each time a process is created and scheduled it is added at the end of the run q
 The scheduler will take the first process and executes it until a process of higher priority interrupts it or the process gives back control to the processor using the message ==yield==.
 
 
-+The scheduler knows the currently active process as well as the lists of pending processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
++The scheduler knows the currently active process as well as the lists of runnable processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
 
 !!!!Process priorities
 
