@@ -2,8 +2,8 @@
 @chaprinciples
 
 In this chapter we revisit the way to scheduler works and present some implementation aspects.
-In particular we show how yield is implemented.
-Let us start with the class ==Process==.
+In particular we show how yield is implemented. The Pharo scheduler is cooperative, preemptive across priorities, non-preemptive within priorities, scheduler.
+But let us start with the class ==Process==.
 
 !!! Revisiting the class ==Process==
 

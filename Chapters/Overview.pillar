@@ -178,9 +178,9 @@ The scheduler will take the first process and executes it until a process of hig
 
 +The scheduler knows the currently active process as well as the lists of runnable processes based on their priority.>file://figures/SchedulerSimple.pdf|width=70|label=SchedulerSimple+
 
-!!!!Process priorities
+!!!Process priorities
 
-At any time only one process is executed. First of all, the processes are being run according to their priority. This priority can be given to a process with the ==priority:== message, or ==forkAt:== message sent to a block. By default, the priority of a newly created process is the one of the active process. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. 
+At any time only one process is executing. First of all, the processes are being run according to their priority. This priority can be given to a process with the ==priority:== message, or ==forkAt:== message sent to a block. By default, the priority of a newly created process is the one of the active process. There are couple of priorities predefined and can be accessed by sending specific messages to ==Processor==. 
 
 
 For example, the following snippet is run at the same priority that background user tasks.
@@ -191,7 +191,9 @@ For example, the following snippet is run at the same priority that background u
 ]]]
 
 
-Next table lists all the predefined priorities together with their numerical value and purpose.
+The scheduler has process priorities from 1 to 100.  Only some of these are named. 
+The programmer is free to use any priority within that range that they see fit.
+The following table lists all the predefined priorities together with their numerical value and purpose.
 
 
 |!Priority|!Name or selector|
@@ -230,6 +232,14 @@ Next table lists all the predefined priorities together with their numerical val
 %#(#systemBackgroundPriority 20) #(#userBackgroundPriority 30) 
 %#(#userInterruptPriority 50) #(#userSchedulingPriority 40))
 %]]]
+
+Here is an example showing that how to use such named priorities. 
+[[[
+[3 timesRepeat: [3 trace. ' ' trace ]] forkAt: Processor userBackgroundPriority.
+[3 timesRepeat: [2 trace. ' ' trace ]] forkAt: Processor userBackgroundPriority + 1.
+]]]
+
+!!! ProcessScheduler rules
 
 The scheduler knows the currently active process as well as the lists of pending processes based on their priority.
 It maintains an array of linked-lists per priority as shown in Figure *@SchedulerSimple*.
