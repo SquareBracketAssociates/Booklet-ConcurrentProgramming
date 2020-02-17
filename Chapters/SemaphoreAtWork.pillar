@@ -184,25 +184,28 @@ accessProtect := Semaphore forMutualExclusion.
 readSynch := Semaphore new
 ]]]
 
-Ces deux sémaphores sont utilisés dans les méthodes d’accès et d’ajouts d’éléments (voir figure 6- 5).
+These two semaphores are used in the methods to access (==next==) and add elements (==nextPut:==). 
 
 [[[
 SharedQueue >> next
 	| value |
 	readSynch wait.
 	accessProtect
-		critical: [readPosition = writePosition
-				ifTrue: [self error: 'Error in SharedQueue synchronization'.
-					Value := nil]
-				ifFalse: [value := contentsArray at: readPosition.
+		critical: [ readPosition = writePosition
+				ifTrue: [ self error: 'Error in SharedQueue synchronization'.
+					value := nil ]
+				ifFalse: [ value := contentsArray at: readPosition.
 					contentsArray at: readPosition put: nil.
-					readPosition := readPosition + 1]].
+					readPosition := readPosition + 1 ]].
 	^ value
 ]]]
 
-Dans la méthode d’accès, next, le sémaphore de synchronisation en lecture « garde » l’entrée de la méthode (ligne 3). Si un processus envoie le message next alors que la file est vide, il sera suspendu et placé dans la file d’attente du sémaphore readSync par la méthode wait. Seul l’ajout d’un nouvel élément pourra le rendre à nouveau actif. La section critique gérée par le sémaphore accessProtect (lignes 4 à 10) garantit que la portion de code contenue dans le bloc est exécutée sans qu’elle puisse être interrompue par un autre sémaphore, ce qui rendrait l’état de la file inconsistant.
+In the method ==next== used to access elements, the semaphore ==readSynch== guards the beginning of the method (line 3). 
+If a process sends the ==next== message when the queue is empty, the process will be suspended and placed in the waiting list of
+the semaphore ==readSync==. Only the addition of a new element will make this process executable (as shown in the ==nextPut:== method below).
+The critiical section managed by the ==accessProtect== semaphore (lines 4 to 10) ensures that code managed by the critical section cannot be interrupted by another process that could be make the queue inconsistent.
 
-Dans la méthode d’ajout d’un élément, ==nextPut:==, la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
+In the method ==nextPut:==, the criticila la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
 
 
 [[[
