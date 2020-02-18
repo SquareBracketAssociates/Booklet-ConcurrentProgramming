@@ -1,19 +1,5 @@
 
 
-The section might want to state some thing like "there that the current
-implementation of the Pharo scheduler has process priorities from 1 to
-100.  Only some of these are named.  But the programmer is free to use any
-priority within that range that they see fit."  It would be good to include
-examples which did things like "forkAt: Processor userPriority + 1", etc.
-
-In the label for Fig 2.1 "ressources" should read "resources".  But
-throughout that section I would word it that "processes need to share
-resources", but "the process is waiting to acquire the resource".  So use
-the plural for the general case and the singular for the specific case.
-Sentences such as this: "P0 has finished to use the resources." should read
-"P0 has finished using the resource."
-
-
 Most of the paragraphs on page 49 in section 4.5 are still in French and
 need translating.
 

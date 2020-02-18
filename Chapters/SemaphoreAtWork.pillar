@@ -161,13 +161,17 @@ Promise >> value: resultValue
 
 
 !!! SharedQueue: a nice semaphore example
-A ==SharedQueue== is a FIFO (first in first out) structure. It uses semaphores to protect from concurrent accesses. 
-A ==SharedQueue== is often used when a structure can be used by multiple processes that may access the same structure. 
+A ==SharedQueue== is a FIFO (first in first out) structure. 
+It is often used when a structure can be used by multiple processes that may access the same structure. 
+The implementation of a ==SharedQueue== uses semaphores to protect its internal queue from concurrent accesses: in particular, a read should not happen when 
+a write is under execution. 
+Similarly two reads would not read elements in the correct order. 
 
- The definition in Pharo is different because based on ==Monitor==. A monitor is a more advanced
-abstraction to manage concurrency situations. 
+The definition in Pharo core is different because based on ==Monitor==. 
+A monitor is a more advanced abstraction to manage concurrency situations. 
 
-Let us look at a possible definitionis the following one.
+Let us look at a possible definition.
+We define a class with the following instance variables: a contents holding the elements of the queue, a read and write position and two semaphores for reading and writing control.
 
 [[[
 Object subclass: #SharedQueue
@@ -175,23 +179,28 @@ Object subclass: #SharedQueue
 	package: 'Collections-Sequenceable'
 ]]]
 
-
 ==accessProtect== is a mutual exclusion semaphore used to synchronise write operations while ==readSync== is a semahore used for synchronizing read operations. 
-These variables are instantiate in the initialize method as follows: 
+These variables are instantiated in the ==initialize== method as follows: 
 
 [[[
-accessProtect := Semaphore forMutualExclusion.
-readSynch := Semaphore new
+SharedQueue >> initialize
+	super initialize. 
+	accessProtect := Semaphore forMutualExclusion.
+	readSynch := Semaphore new
 ]]]
 
 These two semaphores are used in the methods to access (==next==) and add elements (==nextPut:==). 
+The idea is that a read should be blocked when there is no element and adding an element will enable reading.
+In addition any modification of the internal elements should happen within one single process at the same time.
+
 
 [[[
 SharedQueue >> next
 	| value |
 	readSynch wait.
 	accessProtect
-		critical: [ readPosition = writePosition
+		critical: [ 
+			readPosition = writePosition
 				ifTrue: [ self error: 'Error in SharedQueue synchronization'.
 					value := nil ]
 				ifFalse: [ value := contentsArray at: readPosition.
@@ -203,15 +212,17 @@ SharedQueue >> next
 In the method ==next== used to access elements, the semaphore ==readSynch== guards the beginning of the method (line 3). 
 If a process sends the ==next== message when the queue is empty, the process will be suspended and placed in the waiting list of
 the semaphore ==readSync==. Only the addition of a new element will make this process executable (as shown in the ==nextPut:== method below).
-The critiical section managed by the ==accessProtect== semaphore (lines 4 to 10) ensures that code managed by the critical section cannot be interrupted by another process that could be make the queue inconsistent.
+The critiical section managed by the ==accessProtect== semaphore (lines 4 to 10) ensures that queue elements cannot be interrupted by another process that could be make the queue inconsistent.
 
-In the method ==nextPut:==, the criticila la section critique (lignes 3 à 6) protège l’écriture, après laquelle le sémaphore ==readSync== est ''signalée'', ce qui rendra actif les processus en attente de données.
-
+In the method ==nextPut:==, the critical section (lines 3 to 6) protects the contents of the queue. After such a critical section, the ==readSyn== semaphore is signalled. 
+This is makes sure that the waiting read processes can now work.  
+Again the modification of the internal queue is ensured to not be transversed by different processes. 
 
 [[[
 SharedQueue >> nextPut: value 
 	accessProtect
-		critical: [ writePosition > contentsArray size
+		critical: [ 
+			writePosition > contentsArray size
 				ifTrue: [self makeRoomAtEnd].
 			contentsArray at: writePosition put: value.
 			writePosition := writePosition + 1].
