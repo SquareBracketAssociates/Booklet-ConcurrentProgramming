@@ -219,7 +219,7 @@
 			<array>
 				<dict>
 					<key>Bounds</key>
-					<string>{{346.39999203383923, 203.03999546170235}, {169, 18}}</string>
+					<string>{{350.39999203383923, 203.03999546170235}, {161, 18}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -288,7 +288,7 @@
 {\*\expandedcolortbl;;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
-\f0\fs30 \cf0 P1 is using the resources}</string>
+\f0\fs30 \cf0 P1 is using the resource}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
@@ -1144,7 +1144,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{871, 296}, {1168, 777}}</string>
+		<string>{{403, 787}, {1168, 777}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
@@ -1156,13 +1156,13 @@
 		<key>Sidebar_Tab</key>
 		<integer>0</integer>
 		<key>VisibleRegion</key>
-		<string>{{76.5, 185.75}, {234, 150.75}}</string>
+		<string>{{-274, -40}, {936, 603}}</string>
 		<key>ZoomValues</key>
 		<array>
 			<array>
 				<string>Canvas 1</string>
-				<real>4</real>
-				<real>4</real>
+				<real>1</real>
+				<real>1</real>
 			</array>
 		</array>
 	</dict>

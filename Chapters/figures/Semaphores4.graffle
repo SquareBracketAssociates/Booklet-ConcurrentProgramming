@@ -503,7 +503,7 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{352.7999921143055, 192.9599956870079}, {124, 36}}</string>
+					<string>{{356.7999921143055, 192.9599956870079}, {116, 36}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -573,7 +573,7 @@
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
 \f0\fs30 \cf0 P0 does not\
- use the resources}</string>
+ use the resource}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
@@ -1414,7 +1414,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{803, 139}, {1168, 777}}</string>
+		<string>{{292, 69}, {1969, 1297}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
@@ -1426,7 +1426,7 @@
 		<key>Sidebar_Tab</key>
 		<integer>0</integer>
 		<key>VisibleRegion</key>
-		<string>{{51.25, 150.75}, {234, 150.75}}</string>
+		<string>{{51.25, 150.75}, {434.25, 280.75}}</string>
 		<key>ZoomValues</key>
 		<array>
 			<array>

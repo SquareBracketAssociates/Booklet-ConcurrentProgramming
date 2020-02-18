@@ -223,7 +223,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>29</integer>
+					<integer>3</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -249,7 +249,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>4</integer>
+							<integer>5</integer>
 							<key>Style</key>
 							<dict>
 								<key>fill</key>
@@ -294,7 +294,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>5</integer>
+							<integer>6</integer>
 							<key>Magnets</key>
 							<array>
 								<string>{0, 1}</string>
@@ -333,7 +333,7 @@
 						</dict>
 					</array>
 					<key>ID</key>
-					<integer>3</integer>
+					<integer>4</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -355,7 +355,7 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{346.39999203383923, 203.03999546170235}, {169, 18}}</string>
+					<string>{{350.39999203383923, 203.03999546170235}, {161, 18}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -368,7 +368,7 @@
 						<real>15</real>
 					</dict>
 					<key>ID</key>
-					<integer>6</integer>
+					<integer>7</integer>
 					<key>Shape</key>
 					<string>Bezier</string>
 					<key>ShapeData</key>
@@ -424,7 +424,7 @@
 {\*\expandedcolortbl;;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
-\f0\fs30 \cf0 P0 is using the resources}</string>
+\f0\fs30 \cf0 P0 is using the resource}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
@@ -437,7 +437,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>7</integer>
+					<integer>8</integer>
 					<key>Shape</key>
 					<string>Bezier</string>
 					<key>ShapeData</key>
@@ -503,7 +503,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>8</integer>
+					<integer>9</integer>
 					<key>Points</key>
 					<array>
 						<string>{400.31999105215073, 152.67312015593052}</string>
@@ -545,7 +545,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>10</integer>
+							<integer>11</integer>
 							<key>Style</key>
 							<dict>
 								<key>fill</key>
@@ -590,7 +590,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>11</integer>
+							<integer>12</integer>
 							<key>Magnets</key>
 							<array>
 								<string>{0, 1}</string>
@@ -629,7 +629,7 @@
 						</dict>
 					</array>
 					<key>ID</key>
-					<integer>9</integer>
+					<integer>10</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -653,7 +653,7 @@
 					<key>Class</key>
 					<string>LineGraphic</string>
 					<key>ID</key>
-					<integer>12</integer>
+					<integer>13</integer>
 					<key>Points</key>
 					<array>
 						<string>{116.35999777913094, 238.71999636292458}</string>
@@ -697,7 +697,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>14</integer>
+							<integer>15</integer>
 							<key>Style</key>
 							<dict>
 								<key>fill</key>
@@ -742,7 +742,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>15</integer>
+							<integer>16</integer>
 							<key>Magnets</key>
 							<array>
 								<string>{0, 1}</string>
@@ -781,7 +781,7 @@
 						</dict>
 					</array>
 					<key>ID</key>
-					<integer>13</integer>
+					<integer>14</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -812,7 +812,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>17</integer>
+							<integer>18</integer>
 							<key>Style</key>
 							<dict>
 								<key>fill</key>
@@ -857,7 +857,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>18</integer>
+							<integer>19</integer>
 							<key>Magnets</key>
 							<array>
 								<string>{0, 1}</string>
@@ -896,7 +896,7 @@
 						</dict>
 					</array>
 					<key>ID</key>
-					<integer>16</integer>
+					<integer>17</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -927,7 +927,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>20</integer>
+							<integer>21</integer>
 							<key>Style</key>
 							<dict>
 								<key>fill</key>
@@ -972,7 +972,7 @@
 							<key>Class</key>
 							<string>ShapedGraphic</string>
 							<key>ID</key>
-							<integer>21</integer>
+							<integer>22</integer>
 							<key>Magnets</key>
 							<array>
 								<string>{0, 1}</string>
@@ -1011,7 +1011,7 @@
 						</dict>
 					</array>
 					<key>ID</key>
-					<integer>19</integer>
+					<integer>20</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -1046,7 +1046,7 @@
 						<real>15</real>
 					</dict>
 					<key>ID</key>
-					<integer>22</integer>
+					<integer>23</integer>
 					<key>Style</key>
 					<dict>
 						<key>fill</key>
@@ -1089,7 +1089,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>23</integer>
+					<integer>24</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1117,7 +1117,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>24</integer>
+					<integer>25</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -1140,7 +1140,7 @@
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>ID</key>
-					<integer>25</integer>
+					<integer>26</integer>
 					<key>Style</key>
 					<dict>
 						<key>shadow</key>
@@ -1168,7 +1168,7 @@
 						<real>12</real>
 					</dict>
 					<key>ID</key>
-					<integer>26</integer>
+					<integer>27</integer>
 					<key>Shape</key>
 					<string>Circle</string>
 					<key>Style</key>
@@ -1253,7 +1253,7 @@
 		<key>CurrentSheet</key>
 		<integer>0</integer>
 		<key>Frame</key>
-		<string>{{870, 223}, {1168, 777}}</string>
+		<string>{{535, 112}, {1965, 1328}}</string>
 		<key>ShowInfo</key>
 		<false/>
 		<key>ShowRuler</key>
@@ -1265,7 +1265,7 @@
 		<key>Sidebar_Tab</key>
 		<integer>0</integer>
 		<key>VisibleRegion</key>
-		<string>{{71, 116.75}, {234, 150.75}}</string>
+		<string>{{192.25, 116.75}, {433.25, 288.5}}</string>
 		<key>ZoomValues</key>
 		<array>
 			<array>
