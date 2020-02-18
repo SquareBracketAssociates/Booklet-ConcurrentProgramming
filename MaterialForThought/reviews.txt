@@ -1,25 +1,5 @@
-Hi Stef,
-
-  here's my review/feedback
-
-On Sun, Feb 9, 2020 at 5:05 AM Stéphane Ducasse <stephane.ducasse at inria.fr>
-> wrote:
-> >
-> > On http://books.pharo.org/booklet-ConcurrentProgramming/
->
 
 
-In fig 1.1 there needs to be a back arrow from Executing to Runnable which
-is labelled "Preempted by a higher priority process" or similar.
-
-In the label for fig 1.2 the word "pending" should be replaced with
-"runnable".
-
-Page 8, section "Process Priorities"
-"At any time only one process is executed." should read "At any time only
-one process is executing."
-The line starting "Next table lists..." in the last paragraph on page 8
-should read "The following table lists...".
 The section might want to state some thing like "there that the current
 implementation of the Pharo scheduler has process priorities from 1 to
 100.  Only some of these are named.  But the programmer is free to use any
@@ -33,10 +13,6 @@ the plural for the general case and the singular for the specific case.
 Sentences such as this: "P0 has finished to use the resources." should read
 "P0 has finished using the resource."
 
-
-Chapter 3, "Scheduler's Principles" should state that
-"The Smalltalk scheduler is a real-time, cooperative, preemptive across
-priorities, non-preemptive within priorities, scheduler."
 
 Most of the paragraphs on page 49 in section 4.5 are still in French and
 need translating.
