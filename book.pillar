@@ -4,12 +4,12 @@ Now, if you happen to create many green threads (called Process in Pharo) we sug
 have a look at TaskIt. TaskIt is an extensible library to manage concurrent processing at a higher-level of abstractions. 
 You should definitively have a look at it. 
 
-You have in your hand the first version of this book. We are interesting in typos, english corrections,
+We did several iterations and integrated many feedback and we want to thank all the revieiwes. Still we are interesting in typos, english corrections,
 potential mistakes or any kind of feedback. 
 
 You can simply contact us at stephane.ducasse@inria.fr
 
-9 February  2020.
+18 February  2020.
 
 Thanks DiagProf, Eliot Miranda, Sven Van Caekenberghe, and Ben Coman for their feedback, ideas, suggestions.
 Than you again. Special thanks to DiagProf for his patience fixing typos. Special thanks to Ben Coman for the great examples.
