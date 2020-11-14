@@ -102,14 +102,10 @@ Delay >> timingPrioritySignalExpired
 
 
 
-!!! Notes
+%!!! Notes
 
-Delays cannot be shared
-work as a semaphore the system will signal fater x time
-
-
-
-
+%Delays cannot be shared
+%work as a semaphore the system will signal fater x time
 
 
 !!! Conclusion
