@@ -1,0 +1,73 @@
+
+Dear Stéphane
+ 
+Oh, I do have fun :) Many thanks for your encouragement, really!
+ 
+If it doesn’t bother you too much I’d like to follow up with the example:
+ 
+[3 timesRepeat: [3 trace. ' ' trace. 20000 factorial ]] fork.
+[3 timesRepeat: [2 trace. ' ' trace. 20000 factorial ]] fork
+ 
+returning e.g. 3 2 3 3 2 2 instead of 3 3 3 2 2 2.
+ 
+You said: “I think that the problem is that code evaluates in the UI thread and it should not. The tools should execute in another thread.”
+ 
+My absolutely ignorant beginner question is: what does it exactly mean that the code evaluates in the UI thread – I thought encapsulating the code in a block and forking it would no longer “evaluate in the UI thread” but apparently life’s not that easy. This code again ends up intermixing the processes (due to processPreemptionYields and some higher priority processes) (and only works when run at priority 80):
+ 
+[
+[3 timesRepeat: [3 trace. ' ' trace. 20000 factorial ]] forkAt: 41.
+[3 timesRepeat: [2 trace. ' ' trace. 20000 factorial ]] forkAt: 41
+] forkAt: 42
+ 
+So I’m stuck at this :(
+ 
+Strictly speaking, the examples in the book work only because they are fast enough to avoid being preempted by any higher priority process! Once you slow them down e.g. by adding 20000 factorial they fail :|
+ 
+The processPreemptionYields = true feels more like an issue than a feature…  is there a particular reason one might consider true as a better/useful option?
+ 
+==
+And then on page 24 you say: “If the number of waiting processes on a semaphore is smaller than the num-
+ber allowed to wait, sending a wait message is not blocking and the process continues its execution.”
+ 
+It’s confusing: does this suggest a situation where excessSignals > 0 and there still are processes waiting in the semaphore queue – or did I get the meaning wrong? I thought such situation could not occur; that excessSignals > 0 implies an empty semaphore. Every signal during its execution schedules a waiting process unless the semaphore is empty. Wait message then arrives either at an empty semaphore with excessSignals >= 0, or a non-empty semaphore with excessSignals = 0; or not?
+ 
+==
+And finally to your Rendez-vous example: Here’s a possible solution for any number of prisoners using one semaphore prearmed with a negative number – the size of the escaping group of prisoners (minus one). This requires an extension method to the Semaphore class:
+ 
+initSignals: anInteger
+              excessSignals := anInteger.
+ 
+The solution then goes:
+ 
+prisoners := {
+['a running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'a jumping over the barrier' crTrace.
+atBarrier signal ]
+.
+[ 'b running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'b jumping over the barrier' crTrace.
+atBarrier signal ]
+.
+[ 'c running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'c jumping over the barrier' crTrace.
+atBarrier signal ]
+}.
+ 
+atBarrier := Semaphore new initSignals: 1 - prisoners size.
+prisoners shuffled do: [ :each | each fork ]
+ 
+I was a bit hesitant whether a negative semaphore precharge is ‘acceptable’ but couldn’t see why not. It feels quite natural (“how many resources you need to gather before you can continue” type of scenario).
+ 
+I apologize for taking so much of your time.
+ 
+I’d be happy to contribute!; I’m a beginner though and for now plan to work further through this basic stuff – thanks to your making so much available!
+ 
+With best regards,
+ 
+Jaromir
