@@ -1,0 +1,178 @@
+Hi!
+
+Sorry I arrive late, I’ll try to follow.
+
+El 6 ene 2021, a las 20:31, Jaromir Matas <mail@jaromir.net> escribió:
+
+Dear Stéphane
+ 
+Oh, I do have fun :) Many thanks for your encouragement, really!
+ 
+If it doesn’t bother you too much I’d like to follow up with the example:
+ 
+[3 timesRepeat: [3 trace. ' ' trace. 20000 factorial ]] fork.
+[3 timesRepeat: [2 trace. ' ' trace. 20000 factorial ]] fork
+ 
+returning e.g. 3 2 3 3 2 2 instead of 3 3 3 2 2 2.
+ 
+You said: “I think that the problem is that code evaluates in the UI thread and it should not. The tools should execute in another thread.”
+ 
+My absolutely ignorant beginner question is: what does it exactly mean that the code evaluates in the UI thread – I thought encapsulating the code in a block and forking it would no longer “evaluate in the UI thread” but apparently life’s not that easy.
+
+
+Guille Start
+	 I don’t think that this apply to your example. When you select an expression and activate the “doit” command, the selected expression gets compiled and then executed in a process.
+	 What the tools and the compiler will do right now is to evaluate that expression in the process that calls them.
+	 And since this doit command got triggered by a UI event (presumably a shortcut or a click on a menu) handled in the UI process, that process is the UI process.
+
+	 What this means is that in the example
+
+	 pa := [a] fork.
+	 pb := [b] fork.
+
+	 There are *at least* 3 processes interacting.
+	 - the UI process that executes the whole
+	 - the pa process created by the UI process
+	 - the pb process created by the UI process
+Guille End
+
+
+This code again ends up intermixing the processes (due toprocessPreemptionYields and some higher priority processes) (and only works when run at priority 80):
+ 
+[ 
+[3 timesRepeat: [3 trace. ' ' trace. 20000 factorial ]] forkAt: 41.
+[3 timesRepeat: [2 trace. ' ' trace. 20000 factorial ]] forkAt: 41
+] forkAt: 42
+
+Guille Start
+	What do you mean that “it works”?
+	Process interleaving is somehow natural when you start doing concurrency, taking into account that there are processes other than the ones we create in the example that add noise to the execution.
+	But to me this is part of the non-determinism of concurrency, you should not expect it to be deterministic.
+	Let’s say you download a library you don’t control: if that library creates a process, you cannot afford thinking your application processes are all deterministic, as now there is a new guy in the block that may interfere in the scheduling proces.
+
+	The examples in the book were carefully chosen to show some of the properties of the current engine, but changing the examples drastically change the semantics :).
+	When you add a long computation inside a thread, process preemption comes into place.
+	Processes get preempted automatically when they are doing “too much work” to avoid starving other processes.
+	Processes scheduling is triggered in many situations (the current process is suspended and some other processes is chosen to run):
+	 - a semaphore is explicitly waited for (e.g., for wait/sleep or async sockets)
+	 - a long computations will trigger implicitly a process scheduling on backjumps (tipically to pause long loops) or message sends, on a timely basis
+
+	 processPreemptionYields does not have anything to do with how processes get preempted, but it alters the order in which processes get chosen to run (but they will be preempted nevertheless).
+	 Putting all your processes at max priority indeed does the second trick: being in max priority, the only process that can preempt your first process is your second process and vice-versa.
+
+Guille End
+ 
+So I’m stuck at this :( 
+ 
+Strictly speaking, the examples in the book work only because they are fast enough to avoid being preempted by any higher priority process!
+
+Guille Start
+	Yes
+Guille End
+
+Once you slow them down e.g. by adding 20000 factorial they fail :|
+ 
+The processPreemptionYields = true feels more like an issue than a feature…  is there a particular reason one might consider true as a better/useful option?
+
+Guille Start
+	I don’t have strong feelings to either option personally, because to me writing an application that depends on either behaviour is at least risky.
+Guille End
+ 
+==
+And then on page 24 you say: “If the number of waiting processes on a semaphore is smaller than the num-
+ber allowed to wait, sending a wait message is not blocking and the process continues its execution.”
+ 
+It’s confusing: does this suggest a situation where excessSignals > 0 and there still are processes waiting in the semaphore queue – or did I get the meaning wrong?
+
+Guille Start
+	Yes
+Guille End
+
+I thought such situation could not occur; that excessSignals > 0 implies an empty semaphore.
+
+Guille Start
+	You can pre-arm your semaphore with extra signals. Each `wait` will consume a signal, and if not possible it will block.
+	If you check how semaphores for mutual exclusion are initialized, you get
+
+	Semaphore >> forMutualExclusion
+		"Answer an instance of me that contains a single signal. This new 
+		instance can now be used for mutual exclusion (see the critical: message 
+		to Semaphore)."
+
+		^self new signal
+
+		This means the first process waiting will acquire the semaphore, and the second process will block.
+		This allows you to write critical sections like:
+
+		“critical section."
+		s wait.
+		"my critical work”
+		s signal
+
+		And of course, you have the helper method that does that (modulo handling exceptions too):
+
+		Semaphore >> critical: mutuallyExcludedBlock
+
+			| blockValue caught |
+			caught := false.
+			[
+			caught := true.
+			self wait.
+			blockValue := mutuallyExcludedBlock value
+			] ensure: [caught ifTrue: [self signal]].
+			^blockValue
+Guille End
+
+Every signal during its execution schedules a waiting process unless the semaphore is empty. Wait message then arrives either at an empty semaphore with excessSignals >= 0, or a non-empty semaphore with excessSignals = 0; or not?
+
+
+Guille Start
+	This signaling behaviour allows you to do more than critical sections ;).
+	If you pre-arm a semaphore with more than one signal, then sections protected by the semaphore could allow more than one process in them.
+	Imagine your library has some section of code where no more than 3 processes can execute concurrently. Then you can pre-arm your semaphore with three signals.
+	And three processes will be able to enter it, the fourth will wait.
+Guille End
+ 
+==
+And finally to your Rendez-vous example: Here’s a possible solution for any number of prisoners using one semaphore prearmed with a negative number – the size of the escaping group of prisoners (minus one). This requires an extension method to the Semaphore class:
+ 
+initSignals: anInteger
+              excessSignals := anInteger.
+ 
+The solution then goes:
+ 
+prisoners := {
+['a running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'a jumping over the barrier' crTrace.
+atBarrier signal ]
+.
+[ 'b running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'b jumping over the barrier' crTrace.
+atBarrier signal ]
+.
+[ 'c running to the barrier' crTrace.
+atBarrier signal.
+atBarrier wait.
+'c jumping over the barrier' crTrace.
+atBarrier signal ]
+}.
+ 
+atBarrier := Semaphore new initSignals: 1 - prisoners size.
+prisoners shuffled do: [ :each | each fork ]
+ 
+I was a bit hesitant whether a negative semaphore precharge is ‘acceptable’ but couldn’t see why not. It feels quite natural (“how many resources you need to gather before you can continue” type of scenario).
+ 
+I apologize for taking so much of your time.
+ 
+I’d be happy to contribute!; I’m a beginner though and for now plan to work further through this basic stuff – thanks to your making so much available!
+ 
+With best regards,
+ 
+Jaromir
+ 
+ 
+ 
