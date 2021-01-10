@@ -1,0 +1,38 @@
+Stéphane, Guille,
+
+I know you are terribly busy but I don’t need an immediate reaction :) I’m so grateful you wrote this booklet that got me thinking about every example. I have one more comment – this time about the SharedQueue example (page 48) based on Semaphore:
+
+You mentioned Pharo’s implementation is different, based on Monitor, but it took me a while to realize the semantics is different too! The Monitor implementation checks the queue for available data while the Semaphore implementation checks for excessSignals > 0, which generally produces two different outcomes. Pharo’s logic seems to me more natural but one must not use the old ‘semaphore intuition’. May I suggest it might be worth mentioning the difference in the book to save some headaches?
+
+You wrote (p. 49) quote: “The idea is that a read should be blocked when there is no element and adding an element will enable reading.” – Well, that’s true indeed and yet the Semaphore semantics ended up different: nextPut can place a process p1 in a run queue but other process p2 may send next before p1 has got a chance to actually read the data, so as a result: Even when the queue is NOT (yet) empty, the process p2 may be suspended and placed in the waiting list of the semaphore readSync. 
+
+Here’s a testcase that passes for Pharo (and Squeak SharedQueue2) and fails for Squeak/VW SharedQueue (they’d have r2=15 and r3=10):
+
+SharedQueueTest>>testContention2
+
+    | q r1 r2 r3 |
+    q := SharedQueue new.
+
+    [ r1 := q next. q nextPut: 15. r3 := q next ] fork.
+    [ r2 := q next ] fork.
+    Processor yield.   "let the above two threads block"
+    
+    q nextPut: 5.
+    Processor yield.    "let the first thread proceed"
+
+    q nextPut: 10.
+    Processor yield.    "let the unfinished thread finish"
+
+    self should: [ r1 = 5 ].
+    self should: [ r2 = 10 ].
+    self should: [ r3 = 15 ].
+    self should: [ q nextOrNil isNil ]
+
+There are reasonable scenarios where the different semantics may yield unintended results so I guess it’s good to know the difference.
+
+Many thanks again.
+
+Best regards,
+
+Jaromir
+
