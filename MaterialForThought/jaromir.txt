@@ -1,0 +1,65 @@
+Dear Stephane,
+ 
+I’m just reading your Concurrent programming in Pharo; first fo all let me thank you very much for making this available, it’s a great resource!
+ 
+I’d like to mention two issues to you:
+ 
+A) I noticed some unintended mistakes:
+ 
+1. page 8 - 1.7 Process priorities:
+“The scheduler has process priorities from 1 to 100” … should be obviously 10 to 80.
+(Well, Processor inspect lists quiescentProcessLists from 1 to 80 which is a bit confusing)
+ 
+2. page 13 - 1.11 Important API:
+“ProcessorScheduler yield releases the execution…” … should read “Processor yield releases…” I guess
+ 
+3. page 31 – Fig. 3-1:
+Labels runnable and suspended are swapped.
+ 
+ 
+B) I slightly modified your examples and they don’t work any longer as expected; take e.g. the first in your book:
+ 
+[ 1 to: 10 do: [ :i |
+i trace; trace: ' '.
+Processor yield ] ] fork.
+ 
+[ 101 to: 110 do: [ :i |
+i trace; trace: ' '.
+Processor yield ] ] fork.
+ 
+It works properly and produces 1 101 2 102 3 103 4 104 5 105 6 106 7 107 8 108 9 109 10 110.
+ 
+But once you add some time consuming (e.g. 100ms) code like this:
+ 
+[ 1 to: 10 do: [ :i |
+i trace; trace: ' '.
+20000 factorial.
+Processor yield ] ] fork.
+ 
+[ 101 to: 110 do: [ :i |
+i trace; trace: ' '.
+20000 factorial.
+Processor yield ] ] fork
+ 
+it produces a mix like 1 101 102 2 3 103 104 4 105 5 106 107 108 6 109 7 110 8 9 10.
+ 
+It took me a while but then I realized it’s because of the default
+Smalltalk vm processPreemptionYields: true
+Once you change it to false it starts behaving as expected. The thing is any higher priority process preempts the first process but after the higher priority process finishes the other one continues which is in this case unfortunate.
+ 
+The same happens in this example – it produces e.g. 3 2 3 3 2 2 instead of 3 3 3 2 2 2:
+[3 timesRepeat: [3 trace. ' ' trace. 20000 factorial ]] fork.
+[3 timesRepeat: [2 trace. ' ' trace. 20000 factorial ]] fork
+ 
+What bothers me though is that if you run the above example with forkAt: 41 it behaves ok; Can it mean the UI process (at 40) interferes with the processes that run with the same priority (40) – how come?? Or do I miss something?
+ 
+I used a fresh image Pharo 8.0.0
+Build information: Pharo-8.0.0+build.1124.sha.0932da82f08175e906b0e2a8052120c823374e9f (64 Bit)
+ 
+I’m new to Smalltalk so I hope I haven’t missed some obvious thing :) I appreciate your time and thank you again for making a lot of Smalltalk resources available and especially this one – great explanations and examples.
+ 
+Best regards,
+ 
+Jaromir
+--
+Jaromir Matas

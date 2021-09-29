@@ -191,7 +191,7 @@ For example, the following snippet is run at the same priority that background u
 ]]]
 
 
-The scheduler has process priorities from 1 to 100.  Only some of these are named. 
+The scheduler has process priorities from 10 to 80.  Only some of these are named. 
 The programmer is free to use any priority within that range that they see fit.
 The following table lists all the predefined priorities together with their numerical value and purpose.
 
