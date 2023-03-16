@@ -1,0 +1,12 @@
+{
+    "title": "Concurrent Programming in Pharo",
+    "attribution": "Stéphane Ducasse and Guillermo Polito",
+    "series": "The Pharo Technology Booklet Collection — edited by S. Ducasse",
+    "keywords": "concurrence, task, thread, semaphore, Pharo, Smalltalk",
+   "tocFile":"concurrent.pillar",
+   "base_url":"/booklet-Concurrent/html/",
+  "newLine": #unix,
+  "latexWriter": #'latex:sbabook',
+  "htmlWriter": #html
+}
+
