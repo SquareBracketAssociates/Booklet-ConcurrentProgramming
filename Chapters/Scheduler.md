@@ -1,17 +1,15 @@
 ## Scheduler's principles
-
 @chaprinciples
 
-In this chapter we revisit the way to scheduler works and present some implementation aspects.
-In particular we show how yield is implemented. The Pharo scheduler is cooperative, preemptive across priorities, non-preemptive within priorities, scheduler.
+In this chapter, we revisit the way to scheduler works and present some implementation aspects.
+In particular, we show how yield is implemented. The Pharo scheduler is a cooperative, preemptive across priorities, non-preemptive within priorities scheduler.
 But let us start with the class `Process`.
 
 ### Revisiting the class `Process`
 
-
 A process has the following instance variables:
 - priority: holds an integer to represent the priority level of the process.
-- suspendedContext: holds the execution context \(stack reification\) at the moment of the suspension of the process.
+- suspendedContext: holds the execution context (stack reification) at the moment of the suspension of the process.
 - myList: the process scheduler list of processes to which the suspended process belongs to. This list is also called it run queue and it is only for suspended processes.
 
 
@@ -52,8 +50,8 @@ This _process_ linked list is for internal usage. If you need a linked link, bet
 #### States
 
 We saw previously the different states a process can be in.
-We also saw semaphores which suspend and resume suspended processes.
-We revisit the different states of a process by looking its interaction with the process scheduler and 
+We also saw that semaphores suspend and resume suspended processes.
+We revisit the different states of a process by looking at its interaction with the process scheduler and 
 semaphores as shown in *@ProcessorStateSchedulerSemaphore@* : 
 
 
@@ -69,10 +67,10 @@ semaphores as shown in *@ProcessorStateSchedulerSemaphore@* :
 
 ### Looking at some core process primitives
 
-It is worth to look at the way `Process` key methods are implemented.
+It is worth looking at the way `Process` key methods are implemented.
 
 The method `suspend` is a primitive and implemented at the VM level.
-Since the process list \(`myList`\) refers to one of the scheduler priority list in which it is, 
+Since the process list (`myList`) refers to one of the scheduler priority lists in which it is, 
 we see that the message `suspend` effectively remove the process from the scheduler list.
 
 ```
@@ -179,14 +177,14 @@ Remember the examples of previous chapters:
 ```
 
 
-This code snippet shows that even if processes relinquish execution \(via a message `yield`\), the processes of lower priority are not scheduled before the process of higher priority got terminated.
+This code snippet shows that even if processes relinquish execution (via a message `yield`), the processes of lower priority are not scheduled before the process of higher priority got terminated.
 
-!!note In the case of a higher priority level process preempting a process of lower priority, when the preempting process releases the control, the question is then what is the next process to resume: the interrupted one or another one. Currently in Pharo, the interrupted process is put at the end of the waiting queue, while an alternative is to resume the interrupted process to give it a chance to continue its task.
+!!note In the case of a higher priority level process preempting a process of lower priority, when the preempting process releases the control, the question is then what is the next process to resume: the interrupted one or another one? Currently in Pharo, the interrupted process is put at the end of the waiting queue, while an alternative is to resume the interrupted process to give it a chance to continue its task.
 
 ### signal and preemption
 
 
-In the previous chapter we presented this example:
+In the previous chapter, we presented this example:
 
 ```
 	| trace semaphore p1 p2 |
@@ -197,20 +195,20 @@ In the previous chapter we presented this example:
 	   semaphore wait.
 	   trace value: 'Process 1b received signal and terminates' ] forkAt: 30.
 	p2 := [
-	   trace value: 'Process 2a up to signalling semaphore'. 
+	   trace value: 'Process 2a up to signaling semaphore'. 
 	   semaphore signal.
 	   trace value: 'Process 2b continues and terminates' ] forkAt: 20.
 ```
 
 
-Here the higher priority process \(`p1`\) produces trace and waits on the semaphore. 
+Here the higher priority process (`p1`) produces the trace and waits on the semaphore. 
 `p2` is then executed: it produces a trace, then signals the semaphore. 
 This signal reschedules `p1` and since it is of higher priority, it preempts \(`p2`\) and it terminates. 
 Then `p2` terminates.
 
 ```
 	@30 Process 1a waits for signal on semaphore
-	@20 Process 2a up to signalling semaphore
+	@20 Process 2a up to signaling semaphore
 	@30 Process 1b received signal and terminates
 	@20 Process 2b continues and terminates
 ```
@@ -235,7 +233,7 @@ Now we add a second process of lower priority to understand what may happen on p
 ```
 
 
-Here is the produced trace. What is interesting to see is that `p2` is preempted by `p1` as soon as it is signalling the semaphore.
+Here is the produced trace. What is interesting to see is that `p2` is preempted by `p1` as soon as it is signaling the semaphore.
 Then `p1` terminates and the scheduler does not schedule `p2` but `p3`. 
 
 ```
@@ -256,7 +254,7 @@ By default, Pharo uses the first semantics.
 
 ### Understanding `yield`
 
-We mentioned in the first chapter, Pharo's concurrency model is preemptive between processes of different priorities and collaborative among processes of the same priority.
+As we mentioned in the first chapter, Pharo's concurrency model is preemptive between processes of different priorities and collaborative among processes of the same priority.
 We detail how the collaboration occurs: a process has to explicitly give back its execution. 
 As we show in the previous chapter, it does it by sending the message `yield` to the scheduler. 
 
@@ -279,12 +277,12 @@ ProcessScheduler >> yield
 Note that this implementation implies that 
 
 The `yield` method does the following: 
-1. The fork creates a new process. It adds it to the end of the active process's run queue \(because fork create a process whose priority is the same as the active process\).
+1. The fork creates a new process. It adds it to the end of the active process's run queue (because fork creates a process whose priority is the same as the active process).
 1. The message `wait` in `semaphore wait` removes the active process from its run queue and adds it to the semaphore list of waiting processes, so the active process is now not runnable anymore but waiting on the semaphore.
 1. This allows the next process in the run queue to run, and eventually
 1. allows the newly forked process to run, and
 1. the signal in `semaphore signal` removes the process from the semaphore and adds it to the back of the run queue, so
-1. all processes at the same priority level as the process that called `yield` have run.
+1. all processes at the same priority level as the process that sent the message `yield` have run.
 
 
 
@@ -293,7 +291,7 @@ The `yield` method does the following:
 
 `yield` only facilitates other processes having the same priority getting a chance to run.
 It doesn't put the current process to sleep, it just moves the process to the back of its priority run queue.
-It gets to run again before any lower priority process gets a chance to run. Yielding will never allow a lower priority process to run.
+It gets to run again before any lower-priority process gets a chance to run. Yielding will never allow a lower-priority process to run.
 
 Figure *@yield@* illustrates the execution of the two following processes yielding their computation.
 
@@ -329,11 +327,10 @@ We saw that the message `signal` does not transfer execution unless the waiting 
 It just makes the waiting process runnable, and the highest priority runnable process is the one that is run.
 This respects the preemption semantics between processes of different priorities.
 
-
-
 The following code snippet returns false since the forked process got the priority than the current process and the 
 current process continued its execution until the end. 
 Therefore the `yielded` did not get a chance to be modified. 
+
 ```
 | yielded |
 yielded := false.
@@ -342,9 +339,7 @@ yielded
 >>> false
 ```
 
-
-
-Now Let us image that 
+Now let us imagine that would return true.
 ```
 | yielded |
 yielded := false.
@@ -359,7 +354,7 @@ This expression returns true because `fork` creates a process with the same prio
 allows the forked process to execute. 
 
 
-Now let us change the priority of the forked process to be lower than the active one \(here the active one is the UI process\).
+Now let us change the priority of the forked process to be lower than the active one (here the active one is the UI process).
 The current process yields the computation but since the forked process is of lower priority, the current process will be executed before
 the forked one.
 ```
@@ -396,7 +391,7 @@ with a priority of 40.
 
 
 The following traces shows that `Processor yield` does not change the execution of 
-higher priority processes. Here the UI thread is executed prior to the other and yielding does not execute 
+higher-priority processes. Here the UI thread is executed prior to the other and yielding does not execute 
 processes of lower priorities.
 
 ```
@@ -410,7 +405,7 @@ processes of lower priorities.
 
 
 
-Now if we make the UI thread waiting for small enough time \(but long enough that the other processes get executed\), then 
+Now if we make the UI thread wait for small enough time (but long enough that the other processes get executed), then 
 the other processes are run since the UI process is not runnable but waiting. 
 
 ```
@@ -442,7 +437,7 @@ the other processes are run since the UI process is not runnable but waiting.
 ```
 
 
-Yielding will never allow a lower-priority-process to run.  
+Yielding will never allow a lower-priority process to run.  
 For a lower-priority process to run, the current process needs to suspend itself \(with the way to get woken up later\) rather than yield.
 
 
@@ -450,7 +445,7 @@ For a lower-priority process to run, the current process needs to suspend itself
 
 ### About the primitive in yield method
 
-If you look at the exact definition of the `yield` message in Pharo, you can see that it contains an annotation mentionning that this is primitive. The primitive is an optimisation.
+If you look at the exact definition of the `yield` message in Pharo, you can see that it contains an annotation mentioning that this is primitive. The primitive is an optimization.
 
 ```
 ProcessScheduler >> yield
@@ -462,9 +457,9 @@ ProcessScheduler >> yield
 ```
 
 
-When this method is executed, either the primitive puts the calling process to the back of its run queue, or \(if the primitive is not implemented\), it performs what we explained earlier and that is illustrated by the Figure *@yield@*.
+When this method is executed, either the primitive puts the calling process to the back of its run queue, or (if the primitive is not implemented), it performs what we explained earlier and that is illustrated by Figure *@yield@*.
 
-Note that all the primitive does is to circumvent having to create a semaphore, to create, to schedule a process, and to signal and to wait to move a process to the back of its run queue. This is worthwhile because most of the time a process's run queue is empty, it being the only runnable process at that priority.
+Note that all the primitive does is circumvent having to create a semaphore, to create, to schedule a process, and to signal and to wait to move a process to the back of its run queue. This is worthwhile because most of the time a process's run queue is empty, it is the only runnable process at that priority.
 
 ```
 | yielded |
@@ -476,10 +471,10 @@ yielded
 ```
 
 
-In the provious snippet, the expression `Processor yield` gives a chance to the created process to run. Note that the example does not show precisely if  the UI thread was executed first after the `yield` and that in its logic it yields periodically to let lower processes running or if it was just put at the end of its run queue.
+In the previous snippet, the expression `Processor yield` gives a chance for the created process to run. Note that the example does not show precisely if the UI thread was executed first after the `yield` and that in its logic it yields periodically to let lower processes run or if it was just put at the end of its run queue.
 
 
-Here is the code of the primitive: if the run queue of the active process priority is empty nothing happens, else the active process is added as last item in the run queue corresponding to its priority and the highest priority process is run.
+Here is the code of the primitive: if the run queue of the active process priority is empty nothing happens, else the active process is added as the last item in the run queue corresponding to its priority, and the highest priority process is run.
 
 ```
 InterpreterPrimitives >> primitiveYield
@@ -500,15 +495,14 @@ InterpreterPrimitives >> primitiveYield
 
 ### About processPreemption settings
 
-
 Now we will discuss a bit the settings of the VM regarding process preemption: What exactly happens when a process is 
 preempted by a process of a higher priority, and which process is scheduled after the execution of a `yield` message.
-The following is based on an answer of E. Miranda on the VM mailing-list.
+The following is based on an answer from E. Miranda on the VM mailing list.
 
 The virtual machine has a setting to change the behavior of process preemption and especially which process gets
 resumed once the preempting process terminates. 
 
-In Pharo the setting is true. It means that the interrupted process will be added to the end of the queue and giving other 
+In Pharo the setting is true. It means that the interrupted process will be added to the end of the queue and it gives other 
 processes a chance to execute themselves without having to have an explicit `yield`.
 
 ```
@@ -518,7 +512,7 @@ Smalltalk vm processPreemptionYields
 
 
 If  `Smalltalk vm processPreemptionYields` returns false then when preempted by a higher-priority process, the current process stays at the head of its run queue. 
-It means that it will the first one of this priority to be resumed.
+It means that it will be the first one of this priority to be resumed.
 
 Note that when a process waits on a semaphore, it is removed from its run queue.
 When a process resumes, it always gets added to the back of its run queue.
@@ -534,9 +528,9 @@ The two following examples show the difference between the two semantics that ca
 #### First example: two equal processes
 
 
-- Step 1. First we create two processes at a lower priority than the active process and at a priority where there are no other processes. The first expression will find an empty priority level at a priority lower than the active process.
+- Step 1. First, we create two processes at a lower priority than the active process and at a priority where there are no other processes. The first expression will find an empty priority level at a priority lower than the active process.
 - Step 2. Then create two processes at that priority and check that their order in the list is the same as the order in which they were created.
-- Step 3. Set the boolean to indicate that this point was reached and block on a delay, allowing the processes to run to termination. Check that the processes have indeed terminated.
+- Step 3. Set the boolean to indicate that this point was reached and block a delay, allowing the processes to run to termination. Check that the processes have indeed terminated.
 
 
 ```
@@ -605,13 +599,12 @@ Run the above after trying both `Smalltalk vm processPreemptionYields: false` an
 
 What the setting controls is what happens when a process is preempted by a higher-priority process. 
 The `processPreemptionYields = true` does an implicit yield of the preempted process. 
-It changes the order of the run queue by putting the preempted process at the end of the run queue letting a chance to other processes
+It changes the order of the run queue by putting the preempted process at the end of the run queue letting a chance for other processes
 to execute. 
 
 ### Conclusion
 
-
 This chapter presents some advanced parts of the scheduler and we hope that it gives a better picture of the scheduling behavior
-and in particular the preemption of the current running process by a process of higher priority as well as the way yielding the control is implemented. 
+and in particular, the preemption of the currently running process by a process of higher priority as well as the way yielding the control is implemented. 
 
 
