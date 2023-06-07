@@ -1,19 +1,38 @@
-# TaskIt
+## TaskIt
 
-Expressing and managing concurrent computations is indeed a concern of importance to developing applications that scale. A web application may want to use different processes for each of its incoming requests. Or maybe it wants to use a "thread pool" in some cases. In other cases, our desktop application may want to send computations to a worker to not block the UI thread. 
+In the previous chapters, we presented low-level concepts of concurrent programming. 
+It is, however, not really good to sprinkle your code with process forking. This is why we present now TaskIt. TaskIt is a higher-level library to manage concurrent tasks but without resolving to low-level mechanisms. 
 
-Processes in Pharo are implemented as green threads scheduled by the virtual machine, without depending on the machinery of the underlying operating system. This has several consequences on the usage of concurrency we can do:
+TaskIt is a library that eases process usage in Pharo. It provides abstractions to execute and synchronize concurrent tasks, and several pre-built mechanisms that are useful for many application developers. This chapter starts by familiarizing the reader with TaskIt's abstractions, guided by examples and code snippets. In the end, we discuss TaskIt extension points and possible customizations.
 
-- Processes are cheap to create and schedule. We can create as many as them as we want, and performance will only degrade if the code executed in those processes do so, what is to be expected.
-- Processes provide concurrent execution but no real parallelism. Inside Pharo, it does not matter the number of processes we use. They will be always executed in a single operating system thread, in a single operating system process.
+### Why TaskIt?
+Expressing and managing concurrent computations is a concern of importance to developing applications that scale. 
+A web application may want to use different processes for each of its incoming requests. Or it may want to use a "thread pool" in some cases. 
+In other cases, a desktop application may want to send computations to a worker to not block the UI thread.
 
-Also, besides how expensive it is to create a process, to know how we could organize the processes in our application, we need to know how to synchronize such processes. For example, maybe we need to execute two processes concurrently and we want a third one to wait for the completion of the first two before starting. Or maybe we need to maximize the parallelism of our application while enforcing the concurrent access to some piece of state. And all these issues require avoiding the creation of deadlocks.
+You can use the low-level libraries we presented so far. Now it means that as a developer you will have to take care of the following point: you should pay attention that the processes you created do not:
+- create race condition where one process is taking a resource already used by another one,
+- create processes with the wrong priority that can impact the performance and behavior of the complete system,
+- create a process that is starving and waiting endlessly that a semaphore gets signaled.
 
-TaskIt is a library that eases Process usage in Pharo. It provides abstractions to execute and synchronize concurrent tasks, and several pre-built mechanisms that are useful for many application developers. This chapter explores starts by familiarizing the reader with TaskIt's abstractions, guided by examples and code snippets. At the end, we discuss TaskIt extension points and possible customizations.
 
-## Introduction
 
-Pharo 9 includes the `coreTests` group of `BaselineOfTaskIt`. Please, read the following instructions either to load another group, or to load in previous Pharo versions.
+These are the basic problems that may arise when processes are used without real care. 
+In addition, you should understand where to place critical sections if needed.
+
+This is why TaskIt is interesting. It abstracts low-level mechanisms.
+TaskIt's main abstractions are, as the name indicates, tasks. A task is a unit of execution. By splitting the execution of a program into several tasks, TaskIt can run those tasks concurrently, synchronize their access to data, or order even help in ordering and synchronizing their execution.
+
+
+
+%Processes in Pharo are implemented as green threads scheduled by the virtual machine, without %depending on the machinery of the underlying operating system. This has several consequences on the usage of concurrency we can do:
+
+%- Processes are cheap to create and schedule. We can create as many of them as we want, and %performance will only degrade if the code executed in those processes does so, which is to be %expected.
+%- Processes provide concurrent execution but no real parallelism. Inside Pharo, it does not matter %the number of processes we use. They will be always executed in a single operating system thread, %in a single operating system process.
+
+%Also, besides how expensive it is to create a process, to know how we could organize the processes %in our application, we need to know how to synchronize such processes. For example, maybe we need %to execute two processes concurrently and we want a third one to wait for the completion of the %first two before starting. Or maybe we need to maximize the parallelism of our application while %enforcing the concurrent access to some piece of state. And all these issues require avoiding the %creation of deadlocks.
+
+
 
 ### Loading
 
@@ -26,7 +45,7 @@ Metacello new
   load.
 ```
 
-Otherwise, if you want the latest development version, load master:
+Otherwise, if you want the latest development version, load the master branch:
 
 ```smalltalk
 Metacello new
@@ -46,21 +65,19 @@ spec
     with: [ spec repository: 'github://pharo-contributions/taskit:v1.0' ]
 ```
 
-## Asynchronous Tasks
 
-TaskIt's main abstraction are, as the name indicates it, tasks. A task is a unit of execution. By splitting the execution of a program in several tasks, TaskIt can run those tasks concurrently, synchronize their access to data, or order even help in ordering and synchronizing their execution.
-
-### First Example
+### First example
 
 Launching a task is as easy as sending the message `schedule` to a block closure, as it is used in the following first code example:
+
 ```smalltalk
-[ 1 + 1 ] schedule.
+[ 1 + 1 ] schedule
 ```
->The selector name `schedule` is chosen in purpose instead of others such as run, launch or execute. TaskIt promises you that a task will be *eventually* executed, but this is not necessarilly right away. In other words, a task is *scheduled* to be executed at some point in time in the future.
+The selector name `schedule` is chosen in purpose instead of others such as run, launch, or execute. TaskIt promises you that a task will be *eventually* executed, but this is not necessarily right away. In other words, a task is *scheduled* to be executed at some point in time in the future.
 
-This first example is however useful to clarify the first two concepts but it remains too simple. We are schedulling a task that does nothing useful, and we cannot even observe it's result (*yet*). Let's explore some other code snippets that may help us understand what's going on.
+This first example is however useful to clarify the first two concepts but it remains too simple. We are scheduling a task that does nothing useful, and we cannot even observe its result (*yet*). Let's explore some other code snippets that may help us understand what's going on.
 
-The following code snippet will schedule a task that prints to the `Transcript`. Just evaluating the expression below will make evident that the task is actually executed. However, a so simple task runs so fast that it's difficult to tell if it's actually running concurretly to our main process or not.
+The following code snippet will schedule a task that prints to the `Transcript`. Just evaluating the expression below will make it evident that the task is actually executed. However, a so simple task runs so fast that it's difficult to tell if it's actually running concurrently to our main process or not.
 ```smalltalk
 [ 'Happened' logCr ] schedule.
 ```
@@ -70,16 +87,16 @@ The real acid test is to schedule a long-running task. The following example sch
 'Waited' logCr ] schedule.
 ```
 
-### Schedule vs fork
-You may be asking yourself what's the difference between the `schedule` and `fork`. From the examples above they seem to do the same but they do not. In a nutshell, to understand why `schedule` means something different than `fork`, picture that using TaskIt two tasks may execute inside a same process, or in a pool of processes, while `fork` creates a new process every time.
+### Schedule vs. fork
+You may be asking yourself what's the difference between the `schedule` and `fork`. From the examples above they seem to do the same but they do not. In a nutshell, to understand why `schedule` means something different than `fork`, picture that using TaskIt two tasks may execute inside the same process, or in a pool of processes, while `fork` creates a new process every time.
 
 You will find a longer answer in the section below explaining *runners*. In TaskIt, tasks are not directly scheduled in Pharo's global `ProcessScheduler` object as usual `Process` objects are. Instead, a task is scheduled in a task runner. It is the responsibility of the task runner to execute the task.
 
 ### All valuables can be Tasks
 
-We have been using so far block closures as tasks. Block closures are a handy way to create a task since they implictly capture the context: they have access to `self` and other objects in the scope. However, blocks are not always the wisest choice for tasks. Indeed, when a block closure is created, it references the current `context` with all the objects in it and its *sender contexts*, being a potential source of memory leaks.
+We have been using so far block closures as tasks. Block closures are a handy way to create a task since they implicitly capture the context: they have access to `self` and other objects in the scope. However, blocks are not always the wisest choice for tasks. Indeed, when a block closure is created, it references the current `context` with all the objects in it and its *sender contexts*, being a potential source of memory leaks.
 
-The good news is that TaskIt tasks can be represented by almost any object. A task, in TaskIt's domain are **valuable objects** i.e., objects that will do some computation when they receive the `value` message. Actually, the message `schedule` is just a syntax sugar for:
+The good news is that TaskIt tasks can be represented by almost any object. A task, in TaskIt's domain is **valuable objects** i.e., objects that will do some computation when they receive the `value` message. Actually, the message `schedule` is just syntax sugar for:
 
 ```smalltalk
 (TKTTask valuable: [ 1 logCr ]) schedule.
@@ -95,11 +112,10 @@ TKTTask valuable: (MessageSend receiver: 1 selector: #+ arguments: { 7 }).
 Or even create our own task object:
 
 ```smalltalk
-Object subclass: #MyTask
-	instanceVariableNames: ''
-	classVariableNames: ''
+Object << #MyTask
 	package: 'MyPackage'.
-
+```
+```
 MyTask >> value
     ^ 100 factorial
 ```
@@ -110,35 +126,44 @@ and use it as follows:
 TKTTask valuable: MyTask new.
 ```
 
-## Retrieving a Task's Result with Futures
+### Retrieving a task's result with futures
 
-In TaskIt we differentiate two different kinds of tasks: some tasks are just *scheduled* for execution, they produce some side-effect and no result, some other tasks will produce (generally) a side-effect-free value. When the result of a task is important for us, TaskIt provides us with a *future* object. A *future* is no other thing than an object that represents the future value of the task's execution. We can schedule a task with a future by using the `future` message on a block closure, as follows.
+In TaskIt we differentiate two different kinds of tasks: some tasks are just *scheduled* for execution, they produce some side-effect and no result, and some other tasks will produce (generally) a side-effect-free value. When the result of a task is important, TaskIt provides us with a *future* object. 
+A *future* is no other thing than an object that represents the future value of the task's execution.
+We can schedule a task with a future by using the `future` message on a block closure, as follows.
 
 ```smalltalk
 aFuture := [ 2 + 2 ] future.
 ```
 
-One way to see futures is as placeholders. When the task is finished, it deploys its result into the corresponding future. A future then provides access to its value, but since we cannot know *when* this value will be available, we cannot access it right away. Instead, futures provide an asynchronous way to access it's value by using *callbacks*. A callback is an object that will be executed when the task execution is finished.  
+One way to see futures is as placeholders. When the task is finished, it deploys its result into the corresponding future. A future then provides access to its value, but since we cannot know *when* this value will be available, we cannot access it right away. Instead, futures provide an asynchronous way to access its value by using *callbacks*. A callback is an object that will be executed when the task execution is finished.  
 
 In general terms, we do not want to **force** a future to retrieve its value in a synchronous way.
 By doing so, we would be going back to the synchronous world, blocking a process' execution, and not exploiting concurrency.
-Later sections will discuss about synchronous (blocking) retrieval of a future's value.
+Later sections will discuss synchronous (blocking) retrieval of a future's value.
 
-A future can provide two kinds of results: either the task execution was a success or a failure. A success happens when the task completes in a normal way, while a failure happens when an uncatched exception is risen in the task. Because of these distinctions, futures allow the subscription of two different callbacks using the methods `onSuccessDo:` and `onFailureDo:`.
+A future can provide two kinds of results: either the task execution was a success or a failure. 
+- A success happens when the task completes in a normal way.
+- A failure happens when an uncatched exception is risen in the task. 
+
+Because of these distinctions, futures allow the subscription of two different callbacks using the methods `onSuccessDo:` and `onFailureDo:`.
 
 In the example below, we create a future and subscribe to it a success callback. As soon as the task finishes, the value gets deployed in the future and the callback is called with it.
+
 ```smalltalk
 aFuture := [ 2 + 2 ] future.
 aFuture onSuccessDo: [ :result | result logCr ].
 ```
-We can also subscribe callbacks that handle a task's failure using the `onFailureDo:` message. If an exception occurs and the task cannot finish its execution as expected, the corresponding exception will be passed as an argument to the failure callback, as in the following example.
+We can also define callbacks that handle a task's failure using the `onFailureDo:` message. If an exception occurs and the task cannot finish its execution as expected, the corresponding exception will be passed as an argument to the failure callback, as in the following example.
 
 ```smalltalk
 aFuture := [ Error signal ] future.
 aFuture onFailureDo: [ :error | error sender method selector logCr ].
 ```
 
-Futures accept more than one callback. When its associated task is finished, all its callbacks will be *scheduled* for execution. In other words, the only guarantee that callbacks give us is that they will be all eventually executed. However, the future itself cannot guarantee either **when** will the callbacks be executed, or **in which order**. The following example shows how we can subscribe several successful callbacks for the same future.
+Futures accept more than one callback. When its associated task is finished, all its callbacks will be *scheduled* for execution. In other words, the only guarantee that callbacks give us is that they will be all eventually executed. However, the future itself cannot guarantee either **when** will the callbacks be executed, or **in which order**. 
+
+The following example shows how we can define several successful callbacks for the same future.
 
 ```smalltalk
 future := [ 2 + 2 ] future.
@@ -158,9 +183,9 @@ future onSuccessDo: [ :v | v logCr ].
 future onSuccessDo: [ :v | v logCr ].
 ```
 
-## Task Runners: Controlling How Tasks are executed 
+### Task runners: Controlling how tasks are executed 
 
-So far we created and executed tasks without caring too much on the form they were executed. Indeed, we knew that they were run concurrently because they were non-blocking. We also said already that the difference between a `schedule` message and a `fork` message is that scheduled messages are run by a **task runner**.
+So far we created and executed tasks without caring too much about the form they were executed. Indeed, we knew that they were run concurrently because they were non-blocking. We also said already that the difference between a `schedule` message and a `fork` message is that scheduled messages are run by a **task runner**.
 
 A task runner is an object in charge of executing tasks *eventually*. Indeed, the main API of a task runner is the `schedule:` message that allows us to tell the task runner to schedule a task.
 
@@ -168,23 +193,23 @@ A task runner is an object in charge of executing tasks *eventually*. Indeed, th
 aRunner schedule: [ 1 + 1 ]
 ```
 
-A nice extension built on top of schedule is the  `future:` message that allows us to schedule a task but obtain a future of its eventual execution.
+A nice extension built on top of the schedule is the  `future:` message that allows us to schedule a task but obtain a future of its eventual execution.
 
 ```smalltalk
 future := aRunner future: [ 1 + 1 ]
 ```
 
-Indeed, the messages `schedule` and `future` we have learnt before are only syntax-sugar extensions that call these respective ones on a default task runner. This section discusses several useful task runners already provided by TaskIt.
+Indeed, the messages `schedule` and `future` we have learned before are only syntax-sugar extensions that call these respective ones on a default task runner. This section discusses several useful task runners already provided by TaskIt.
 
-### New Process Task Runner
+### New process task runner
 
-A new process task runner, instance of `TKTNewProcessTaskRunner`, is a task runner that runs each task in a new separate Pharo process. 
+A new process task runner, an instance of `TKTNewProcessTaskRunner`, is a task runner that runs each task in a new separate Pharo process. 
 
 ```smalltalk
 aRunner := TKTNewProcessTaskRunner new.
 aRunner schedule: [ 1 second wait. 'test' logCr ].
 ```
-Moreover, since new processes are created to manage each task, scheduling two different tasks will be executed concurrently. For example, in the code snippet below, we schedule twice a task that printing the identity hash of the current process.
+Moreover, since new processes are created to manage each task, scheduling two different tasks will be executed concurrently. For example, in the code snippet below, we schedule twice a task that prints the identity hash of the current process.
 
 ```smalltalk
 aRunner := TKTNewProcessTaskRunner new.
@@ -224,6 +249,7 @@ First, you'll see that a different processes is being used to execute each task.
 ### Local Process Task Runner
 
 The local process runner, instance of `TKTLocalProcessTaskRunner`, is a task runner that executes a task in the caller process. In other words, this task runner does not run concurrently. Executing the following piece of code:
+
 ```smalltalk
 aRunner := TKTLocalProcessTaskRunner new.
 future := aRunner schedule: [ 1 second wait ].
@@ -241,9 +267,9 @@ While this runner may seem a bit naive, it may also come in handy to control and
 
 ### The Worker Runner
 
-The worker runner, instance of `TKTWorker`, is a task runner that uses a single process to execute tasks from a queue. The worker's single process removes one-by-one the tasks from the queue and executes them sequenceally. Then, schedulling a task into a worker means to add the task inside the queue.
+The worker runner, and instance of `TKTWorker`, is a task runner that uses a single process to execute tasks from a queue. The worker's single process removes one-by-one the tasks from the queue and executes them sequentially. Then, scheduling a task into a worker means adding the task inside the queue.
 
-A worker manages the life-cycle of its process and provides the messages `start` and `stop` to control when the worker thread will begin and end.
+A worker manages the life cycle of its process and provides the messages `start` and `stop` to control when the worker thread will begin and end.
 
 ```smalltalk
 worker := TKTWorker new.
@@ -252,7 +278,7 @@ worker schedule: [ 1 + 5 ].
 worker stop.
 ```
 
-By using workers, we can control the amount of alive processes and how tasks are distributed amongst them. For example, in the following example three tasks are executed sequenceally in a single separate process while still allowing us to use an asynchronous style of programming.
+By using workers, we can control the amount of live processes and how tasks are distributed amongst them. For example, in the following example, three tasks are executed sequentially in a single separate process while still allowing us to use an asynchronous style of programming.
 
 ```smalltalk
 worker := TKTWorker new start.
@@ -266,9 +292,9 @@ Workers can be combined into *worker pools*.
 
 ### The Worker pool
 
-A TaskIt worker pool is pool of worker runners, equivalent to a ThreadPool from other programming languages. Its main purpose is to provide several worker runners and decouple us from the management of threads/processes. A worker pool is a runner in the sense we use the `schedule:` message to schedule tasks in it. 
+A TaskIt worker pool is a pool of worker runners, equivalent to a ThreadPool from other programming languages. Its main purpose is to provide several worker runners and decouple us from the management of threads/processes. A worker pool is a runner in the sense we use the `schedule:` message to schedule tasks in it. 
 
-In TaskIt we count with two kind of worker pools: 
+In TaskIt we count two kinds of worker pools: 
 
  * TKTWorkerPool  
  * TKTCommonQueueWorkerPool
@@ -276,14 +302,17 @@ In TaskIt we count with two kind of worker pools:
 
 #### TKTWorkerPool
 
-Internally, all runners inside a TKTWorkerPool pool have a task queue. This pool counts with a worker that is in charge of scheduling tasks into one of the available workers, taking in account the work load of each worper. 
+Internally, all runners inside a TKTWorkerPool pool have a task queue. This pool counts a worker that is in charge of scheduling tasks into one of the available workers, taking into account the workload of each worker. 
 
-Different applications may have different concurrency needs, thus, TaskIt worker pools do not provide a default amount of workers. Before using a pool, we need to specify the maximum number of workers in the pool using the `poolMaxSize:` message. A worker pool will create new workers on demand. 
+Different applications may have different concurrency needs, thus, TaskIt worker pools do not provide a default amount of workers. Before using a pool, we need to specify the maximum number of workers in the pool using the `poolMaxSize:` message. A worker pool will create new workers on demand.
+
+
 ```smalltalk
 pool := TKTWorkerPool new.
 pool poolMaxSize: 5.
 ```
 TaskIt worker pools use internally an extra worker to synchronize the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
+
 ```smalltalk
 pool := TKTWorkerPool new.
 pool poolMaxSize: 5.
@@ -299,15 +328,17 @@ pool stop.
 
 #### TKTCommonQueueWorkerPool
 
-Internally, all runners inside a TKTCommonQueueWorkerPool pool share a common queue. This pool counts with a watchdog that is in charge of ensuring that all the workers are alive, and in charge of reducing the amount of workers when the load of work goes down. 
+Internally, all runners inside a TKTCommonQueueWorkerPool pool share a common queue. This pool counts with a watchdog that is in charge of ensuring that all the workers are alive, and in charge of reducing the number of workers when the load of work goes down. 
 
 
-Different applications may have different concurrency needs, thus, TaskIt worker pools do not provide a default amount of workers. Before using a pool, we need to specify the maximum number of workers in the pool using the `poolMaxSize:` message. A worker pool will create new workers on demand. 
+Different applications may have different concurrency needs, thus, TaskIt worker pools do not provide a default amount of workers. Before using a pool, we need to specify the maximum number of workers in the pool using the `poolMaxSize:` message. A worker pool will create new workers on demand.
+
 ```smalltalk
 pool := TKTCommonQueueWorkerPool new.
 pool poolMaxSize: 5.
 ```
 TaskIt worker pools use internally an extra worker to synchronize the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
+
 ```smalltalk
 pool := TKTCommonQueueWorkerPool new.
 pool poolMaxSize: 5.
@@ -320,13 +351,13 @@ Once we are done with the worker pool, we can stop it by sending it the `stop` m
 pool stop.
 ```
 
-### Managing Runner Exceptions
+### Managing runner exceptions
 
-As we stated before, in TaskIt the result of a task can be interesting for us or not. In case we do not need a task's result, we will schedule it usign the `schedule` or `schedule:` messages. This is a kind of fire-and-forget way of executing tasks. On the other hand, if the result of a task execution interests us we can get a future on it using the `future` and `future:` messages. These two ways to execute tasks require different ways to handle exceptions during task execution.
+As we stated before, in TaskIt the result of a task can be interesting for us or not. In case we do not need a task's result, we will schedule it using the `schedule` or `schedule:` messages. This is a kind of fire-and-forget way of executing tasks. On the other hand, if the result of a task execution interests us we can get a future on it using the `future` and `future:` messages. These two ways to execute tasks require different ways to handle exceptions during task execution.
 
-First, when an exception occurs during a task execution that has an associated future, the exception is forwarded to the future. In the future we can subscribe a failure callback using the `onFailureDo:` message to manage the exception accordingly.
+First, when an exception occurs during a task execution that has an associated future, the exception is forwarded to the future. In the future, we can subscribe to a failure callback using the `onFailureDo:` message to manage the exception accordingly.
 
-However, on a fire-and-forget kind of scheduling, the execution and results of a task is not anymore under our control. If an exception happens in this case, it is the responsibility of the task runner to catch the exception and manage it gracefully. For this, each task runners is configured with an exception handler in charge of it. TaskIt exception handler classes are subclasses of the abstract `TKTExceptionHandler` that defines a `handleException:` method. Subclasses need to override the `handleException:` method to define their own way to manage exceptions.
+However, on a fire-and-forget kind of schedule, the execution and results of a task are not anymore under our control. If an exception happens in this case, it is the responsibility of the task runner to catch the exception and manage it gracefully. For this, each task runner is configured with an exception handler in charge of it. TaskIt exception handler classes are subclasses of the abstract `TKTExceptionHandler` that defines a `handleException:` method. Subclasses need to override the `handleException:` method to define their own way to manage exceptions.
 
 TaskIt provides by default a `TKTDebuggerExceptionHandler`, accessible from the configuration `TKTConfiguration errorHandler` that will open a debugger on the raised exception. The `handleException:` method is defined as follows:
 
@@ -343,7 +374,7 @@ aRunner exceptionHandler: TKTDebuggerExceptionHandler new.
 
 ### Task Timeout
 
-In TaskIt tasks can be optionally schedulled with a timeout. A task's timeout limits the execution of a task to a window of time. If the task tries to run longer than the specified time, the task is cancelled automatically. This behaviour is desirable because a long running tasks may be a hint towards a problem, or it can just affect the responsiveness of our application.
+In TaskIt tasks can be optionally scheduled with a timeout. A task's timeout limits the execution of a task to a window of time. If the task tries to run longer than the specified time, the task is canceled automatically. This behavior is desirable because a long-running tasks may be a hint towards a problem, or it can just affect the responsiveness of our application.
 
 A task's timeout can be provided while scheduling a task in a runner, using the `schedule:timeout:` message, asFollows: 
 ```smalltalk
@@ -356,21 +387,19 @@ A task's timeout must not be confused with a future's synchronous access timeout
 
 ### Where do tasks and callbacks run by default?
 
-As we stated before, the messages #schedule and #future will schedule a task implicitly in a *default* task runner. To be more precise, it is not a default task runner but the **current task runner** that is used. In other words, task scheduling is context sensitive: if a task A is beign executed by a task runner R, new tasks scheduled by A are implicitly scheduled R. The only exception to this is when there is no such task runner, i.e., when the task is scheduled from, for example, a workspace. In that case a default task runner is chosen for scheduling.
+As we stated before, the messages #schedule and #future will schedule a task implicitly in a *default* task runner. To be more precise, it is not a default task runner but the **current task runner** that is used. In other words, task scheduling is context sensitive: if task A is being executed by a task runner R, new tasks scheduled by A are implicitly scheduled by R. The only exception to this is when there is no such task runner, i.e., when the task is scheduled from, for example, a workspace. In that case, a default task runner is chosen for scheduling.
 
-> Note: In the current version of taskit (v1.0) the default task runner is the global worker pool that can be explicitly accessed evaluating the following expression `TKTConfiguration runner`.
+Note: In the current version of TaskIt (v1.0) the default task runner is the global worker pool that can be explicitly accessed by evaluating the following expression `TKTConfiguration runner`.
 
 Something similar happens with callbacks. Before we said that callbacks are eventually and concurrently executed. This happens because callbacks are scheduled as normal tasks after a task's execution. This scheduling follows the rules from above: callbacks will be scheduled in the task runner where it's task was executed.
 
-## Advanced Futures
+### Advanced Futures: combinators
 
-### Future combinators
-
-Futures are a nice asynchronous way to obtain the results of our eventually executed tasks. However, as we do not know when tasks will finish, processing that result will be another asynchronous task that needs to start as soon as the first one finishes. To simplify the task of future management, TaskIt futures come along with some combinators.
+Futures are a nice asynchronous way to obtain the results of our eventually executed tasks. However, as we do not know when tasks will finish, processing those results will be another asynchronous task that needs to start as soon as the first one finishes. To simplify the task of future management, TaskIt's futures come along with some combinators.
 
 - **The `collect:` combinator**
 
-The `collect:` combinator does, as its name says, the same than the collection's API: it transforms a result using a transformation.
+The `collect:` combinator does, as its name says, the same as the collection's API: it transforms a result using a transformation.
 
 ```smalltalk
 future := [ 2 + 3 ] future.
@@ -382,7 +411,7 @@ The `collect:` combinator returns a new future whose value will be the result of
 
 - **The `select:` combinator**
 
-The `select:` combinator does, as its name says, the same than the collection's API: it filters a result satisfying a condition.
+The `select:` combinator does, as its name says, the same as the collection's API: it filters a result satisfying a condition.
 
 ```smalltalk
 future := [ 2 + 3 ] future.
@@ -441,7 +470,7 @@ In other words, `fallbackTo:` produces a new future whose value is the first's f
 
 - **The `firstCompleteOf:` combinator**
 
-The `firstCompleteOf:` combinator combines two futures resulting in a new future whose value is the value of the future that finishes first, wether it is a success or a failure.
+The `firstCompleteOf:` combinator combines two futures resulting in a new future whose value is the value of the future that finishes first, whether it is a success or a failure.
 
 ```smalltalk
 failFuture := [ 1 second wait. Error signal ] future.
@@ -455,7 +484,7 @@ In other words, `fallbackTo:` produces a new future whose value is the first's f
 
 - **The `andThen:` combinator**
 
-The `andThen:` combinator allows to chain several futures to a single future's value. All futures chained using the `andThen:` combinator are guaranteed to be executed sequenceally (in contrast to normal callbacks), and all of them will receive as value the value of the first future (instead of the of of it's preceeding future).
+The `andThen:` combinator allows one to chain several futures to a single future's value. All futures chained using the `andThen:` combinator are guaranteed to be executed sequentially (in contrast to normal callbacks), and all of them will receive as value the value of the first future (instead of its preceding future).
 
 ```smalltalk
 ([ 1 + 1 ] future
@@ -465,10 +494,10 @@ The `andThen:` combinator allows to chain several futures to a single future's v
 
 This combinator is meant to enforce the order of execution of several actions, and this it is mostly for side-effect purposes where we want to guarantee such order.
 
-### Synchronous Access
+### Synchronous access
 
 Sometimes, although we do not recommend it, you will need or want to access the value of a task in a synchronous manner: that is, to wait for it. We do not recommend waiting for a task because of several reasons:
-  - sometimes you do not know how much a task will last and therefore the waiting can kill's your application's responsiveness
+  - sometimes you do not know how much a task will last and therefore the waiting can kill your application's responsiveness
   - also, it will block your current process until the waiting is finished
   - you come back to the synchronous world, killing completely the purpose of using TaskIt :)
 
@@ -506,16 +535,15 @@ future := [ 5 seconds wait ] future.
 
 ## Services
 
-TaskIt furnishes a package implementing services. A service is a process that executes a task over and over again. You can think about a web server, or a database server that needs to be up and running and listening to new connections all the time.
+TaskIt offers a package implementing services. A service is a process that executes a task over and over again. You can think about a web server or a database server that needs to be up and running and listening to new connections all the time.
 
 Each TaskIt service may define a `setUp`, a `tearDown`, and a `stepService`. `setUp` is run when a service is being started, `shutDown` is run when the service is being shut down, and `stepService` is the main service action that will be executed repeatedly.
 
 Creating a new service is as easy as creating a subclass of `TKTService`. For example, let's create a service that watches the existence of a file. If the file does not exist it will log it to the transcript. It will also log when the service starts and stops to the transcript.
 
 ```smalltalk
-TKTService subclass: #TKTFileWatcher
-  instanceVariableNames: 'file'
-  classVariableNames: ''
+TKTService << #TKTFileWatcher
+  slots: {#file};
   package: 'TaskItServices-Tests'
 ```
 
@@ -525,7 +553,8 @@ Hooking on the service's `setUp` and `tearDown` is as easy as overriding such me
 TKTFileWatcher >> setUp
   super setUp.
   Transcript show: 'File watcher started'.
-
+```
+```
 TKTFileWatcher >> tearDown
   super tearDown.
   Transcript show: 'File watcher finished'.
@@ -555,19 +584,22 @@ watcher file: 'temp.txt'.
 watcher start.
 ```
 
-Requesting the stop of a service is done by sending it the `stop` message. Know that sending the `stop` message will not stop the service right away. It will actually request it to stop, which will schedule the tear down of the service and kill its process after that. 
+Requesting the stop of a service is done by sending it the `stop` message. 
+Know that sending the `stop` message will not stop the service right away. 
+It will actually request it to stop, which will schedule the teardown of the service and kill its process after that. 
 
 ```smalltalk
 watcher stop.
 ```
 
-Stopping the process in an unsafe way is also supported by sending it the `kill` message. Killing a service will stop it right away, interrupting whatever task it was executing.
+Stopping the process in an unsafe way is also supported by sending it the `kill` message. 
+Killing a service will stop it right away, interrupting whatever task it was executing.
 
 ```smalltalk
 watcher kill.
 ```
 
-### Creating Services with Blocks
+### Creating services with blocks
 
 Additionally, TaskIt provides an alternative means to create services through blocks (or valuables actually) using `TKTParameterizableService`. An alternative implementation of the file watcher could be done as follows.
 
@@ -583,28 +615,26 @@ service step: [
 service start.
 ```
 
-## ActIt
+### ActIt
 
-TaskIt we are also providing actors, leveraging the whole Taskit implementation, and adding some extra features.
-Our implementation is inspired by "Actalk: a Testbed for Classifying and Designing Actor Languages in the Smalltalk-80 Environment", but adapted to the new Pharo state-full traits.
+TaskIt we are also providing actors, leveraging the whole Taskit implementation, and adding some extra features. Our implementation is inspired by "Actalk: a Testbed for Classifying and Designing Actor Languages in the Smalltalk-80 Environment", but adapted to the new Pharo state-full traits.
 
 
-### Actors
+#### Actors
 
 The actor's model proposes to provide an interface to interact with a process. Allowing the user of a process to ask for service to a process, by message sending.
 
 To achieve the same kind of behavior in Pharo, we subordinate a process to expose and serve the behavior of an existing object. 
 
-### How to use it
+#### How to use it
 
-For achieving this we propose the trait TKTActorBehaviour, which is responsible to extend a class by adding the message actor. 
+For achieving this we propose the trait `TKTActorBehaviour`, which is responsible to extend a class by adding the message actor. 
 
+This actor message will return an instance of the class `TKTActor`, which will act as a proxy (managed by `doesnotUnderstand:` message) to the object, but transform the calls into tasks, to be executed sequentially.
 
-This actor message will return an instance of the class TKTActor, which will act as a proxy (managed by #doesnotUnderstand: message) to the object, but transform the calls into tasks, to be executed sequentially.
+Each method sent to the actor will return a *future*. 
 
-Each method sent to the actor, will return a *future*. 
-
-For making your domain object to become an actor, add the usage of the trait TKTActorBehaviour as following:
+For making your domain object become an actor, add the usage of the trait `TKTActorBehaviour` as following:
 
 ```smalltalk
 Object << #MyDomainObject
@@ -618,97 +648,74 @@ myObject setValue: 2.
 self assert: myObject getValue equals: 2.
 
 myActor := myObject actor.
-self assert: ( myActor getValue isKindOf: TKTFuture).
-self assert: ( myActor getValue synchronizeTimeout: 1 second) equals: myObject getValue. 
- 
+self assert: (myActor getValue isKindOf: TKTFuture).
+self assert: (myActor getValue synchronizeTimeout: 1 second) equals: myObject getValue. 
+
 ```
 
 ### How to act
- 
-So, to add this trait is not enough to make your Object into an Actor. 
+
+To add this trait is not enough to make your Object into an Actor. 
 You have to have in mind that any time that you use `smalltalk self` in your object, you are doing a synchronous call. 
 That each time that you give your object's reference by parameter, instead of the actor's reference, your object will work as a classic object as well.
   
 For allowing the user to do async calls to self, the trait provides de propery `smalltalk aself` (Async-self). 
   
-Remind also that even when actors provide a nice way to avoid simple semaphores, they do not fully avoid deadlocks, since the interaction in between actors is:
-  - possible
-  - desirable 
-  - non-regulated 
+Remind also that even when actors provide a nice way to avoid simple semaphores, they do not fully avoid deadlocks, since the interaction between actors is possible, desirable, and 
+non-regulated.
   
 
 
+### Process dashboard 
 
-## Process dashboard 
+TaskIt provides a process dashboard  based on announcements. 
 
-TaskIt provides as well a far more interesting process dashboard, based on announcements. 
+For accessing this dashboard, go to World  menu > TaskIt > Process dashboard.
 
-For accessing this dashboard, go to World menu > TaskIt > Process dashboard, as showed in the following image. 
+The window has two tabs.
 
-![Please add an issue. Image is not loading!][image-menu]
-
-The window has two tabs. 
-
-### TaskIt tab 
-The first one showing the processes launched by TaskIt looks like 
-
-![Please add an issue. Image is not loading!][image-main]
+#### TaskIt tab 
+The first one shows the processes launched by TaskIt looks like 
 
 The showed table has six fields. 
 - \# ordinal number. Just for easing the reading.
-- Name: The name of the task. If none name was given it generates a name based on the related objects. 
+- Name: The name of the task. If no name was given it generates a name based on the related objects. 
 - Sending: The selector of the method that executes the task. If the task is based on a block, it will be #value. 
 - To: The receiver of the message that executes the task. 
 - With: The arguments of the message send that executes the task
 - State: [Running|NotRunning].
 
+Some of those fields are attached some contextual menu. 
 
-Some of those fields have attached some contextual menu. 
+Do right-click on top of the name of the process for interacting with the process.
 
-Do right-click on top of the name of the process for interacting with the process
-![Please add an issue. Image is not loading!][image-process]
-
-The options given are
+The options given are:
 - Inspect the process: It opens an inspector showing the related TaskIt process.
-- Suspend|Resume the process: It pause|resume the selected process. 
-- Cancel the process: It cancel the process execution.  
+- Suspend|Resume the process: It pauses or resumes the selected process. 
+- Cancel the process: It cancels the process execution.  
 
+Do right-click on top of the message selector for interacting with selector method.
 
-Do right-click on top of the message selector for interacting with selector|method
-![Please add an issue. Image is not loading!][image-selector]
-
-The options given are
+The options given are:
 - Method. This option browses the method executed by the task.
 - Implementors. This option browses all the implementors of this selector. 
 
 
 Finally, do right-click on top of the receiver for interacting with it
-![Please add an issue. Image is not loading!][image-receiver]
 
 The option given is
--  Inspect receiver. What does exactly that. Inspects the receiver of the message. 
+-  Inspect receiver. It inspects the receiver of the message.
 
-###System tab
+####System tab
 
-Finally, to allow the user to use just one interface. There is a second tab that shows the processes that were not spawnend by TaskIt. 
+Finally, to allow the user to use just one interface. There is a second tab that shows the processes that were not spawned by TaskIt. 
 
-![Please add an issue. Image is not loading!][image-system]
-
-
-### Based on announcements 
+#### About on announcements 
   
-   The TaskIt browser is based on announcements. This fact allows the interface to be dynamic, having allways fresh information, without needing a pulling process, as in the native process browser. 
-   
+The TaskIt browser is based on announcements. 
+This fact allows the interface to be dynamic, having always fresh information, without needing a pulling process, as in the native process browser. 
 
-[image-menu]: https://github.com/pharo-contributions/taskit/blob/master/images/AccessMenu.png "MenuTaskit"
-[image-main]: https://github.com/pharo-contributions/taskit/blob/master/images/FirstScreen.png "Main tab"
-[image-process]: https://github.com/pharo-contributions/taskit/blob/master/images/ProcessMenu.png "Process menu"
-[image-receiver]: https://github.com/pharo-contributions/taskit/blob/master/images/ReceiverInspector.png "Receiver menu"
-[image-selector]: https://github.com/pharo-contributions/taskit/blob/master/images/SelectorInspection.png "Selector (method) menu"
-[image-system]: https://github.com/pharo-contributions/taskit/blob/master/images/SystemScreen.png "System process tab"
-
-
-## Debugger
+### Debugger
 
 TaskIt comes with a debugger extension for Pharo that can be installed by loading the 'debug' group of the baseline (the debugger is not loaded by any other group):
 
@@ -719,9 +726,9 @@ Metacello new
   load: 'debug'.
 ```
 
-After installation the TaskIt debugger extension will automatically be available to processes that are associated with a task or future. You can manually enable or disable the debugger extension by evaluating `TKTDebugger enable.` or `TKTDebugger disable.`.
+After installation, the TaskIt debugger extension will automatically be available to processes that are associated with a task or future. You can manually enable or disable the debugger extension by evaluating `TKTDebugger enable` or `TKTDebugger disable`.
 
-The TaskIt debugger shows an augmented stack, in which the process that represents the task or future is at the top and the process that created the task or future is at the bottom (recursively for tasks and futures created from other tasks and futures). The following visualisation shows one future process (top) with frames `1` and `2` and the corresponding creator process (frames `3` and `4`):
+The TaskIt debugger shows an augmented stack, in which the process that represents the task or future is at the top and the process that created the task or future is at the bottom (recursively for tasks and futures created from other tasks and futures). The following visualization shows one future process (top) with frames `1` and `2` and the corresponding creator process (frames `3` and `4`):
 
 ```
 -------------------
@@ -738,22 +745,20 @@ The TaskIt debugger shows an augmented stack, in which the process that represen
 The implementation and conception of this debugger extension can be found in Max Leske's Master's thesis entitled ["Improving live debugging of concurrent threads"](http://scg.unibe.ch/scgbib?query=Lesk16a&display=abstract).
 
 
+### Configuration
 
+TaskIt bases its general configuration on the idea of profiles. 
+A profile defines some major features needed by the library to work properly.
 
-## Configuration
+#### Profiles.
 
-TaskIt bases it general configuration in the idea of profiles. 
-A profile define some major features needed by the library to work properly.
-
-
-### TKTProfile
-Defines the default profiles, on the class side, along side with the default profile to use
-
+The class `TKTProfile` defines default profiles on the class side.
 
 ```smalltalk
 defaultProfile
 	^ #development
-	
+```
+```
 development
 	<profile: #development>
 	^ TKTProfile
@@ -765,6 +770,9 @@ development
 			(#errorHandler -> TKTDebuggerExceptionHandler).
 			(#processProvider -> TKTTaskItProcessProvider new).
 			(#serviceManager -> TKTServiceManager new)} asDictionary
+```
+
+```
 production
 	<profile: #production>
 	^ TKTProfile
@@ -777,7 +785,9 @@ production
 			(#errorHandler -> TKTExceptionHandler).
 			(#processProvider -> TKTPharoProcessProvider new).
 			(#serviceManager -> TKTServiceManager new)} asDictionary
+```
 
+```
 test
 	<profile: #test>
 	^ TKTProfile
@@ -793,72 +803,88 @@ test
 
 
 
-- **Modifying the running profile** 
+#### Modifying the running profile
 
 There are three ways of modifying the running profile.
-  
+
 **The first** one and simpler, is to go to the *settings browser* and choose the available profile in the section 'TaskIt execution profile' 
 In this combo box you will find all the predefined profiles. 
-**The second** way is to use code
+
+ **The second** way is to use code:
   
 ```smalltalk
- 	TKTConfiguration profileNamed: #development 
+TKTConfiguration profileNamed: #development 
 ```
-The method profileNamed: aProfile receives as parameter a name of a predefined profile. This way is handy for automating behavior. 
+The method `profileNamed: aProfile` receives as parameter a name of a predefined profile. This way is handy for automating behavior. 
 
 **The third** one finally is to manually build your own profile, and set it up, again by code 	
 
 
 ```smalltalk
-    profile := TKTProfile new. 
+profile := TKTProfile new. 
 	... 
-	configure 
+configure 
 	...
- 	TKTConfiguration profile: profile.
+TKTConfiguration profile: profile.
 ```
 
-- **Defining a new predefined-profile** 
+#### Defining a new predefined-profile
+
 To add a new profile is pretty easy, and so far, pretty static
 
-For adding a new profile you have only to define a new method in the class side of TKTProfile, adding the pragma 
-```<profile:#profileName>```
+For adding a new profile you have only to define a new method in the class side of `TKTProfiles` by adding the pragma `<profile:#profileName>`.
 
 This method should return an instance of TKTProfile, or polymorphic to it. 
 
-Since some configurations may not be compatible (since the debugging mode has some specific restrictions), a check of sanity of the configuration is done during the activation of the profile. Therefore, it is expected to have exceptions with some configurations. 
+Since some configurations may not be compatible (since the debugging mode has some specific restrictions), a check of the sanity of the configuration is done during the activation of the profile. Therefore, it is expected to have exceptions with some configurations. 
 
-- **Modifying an existing predefined-profile** 
+#### Modifying an existing predefined-profile
 
-As to adding a new profile, everything is on the code. You just have to address the method related with the profile that you want to modify and modify it.
-If the modified profile is the one on usage, the changes will have no effect up to the next time that you actively set this profile. You can use any of the ways of setting up the current profile for forcing the reload of the profile. 
+As to adding a new profile, everything is on the code. You just have to address the method related to the profile that you want to modify and modify it.
+If the modified profile is the one on usage, the changes will have no effect up to the next time that you actively set this profile. 
 
+#### Using a specific profile during specific computations
 
-- ** Using a specific profile during specific computations **
-
-At some points,you may need to switch the working profile, or part of it, not for all the images but for some specific computation.
+At some points, you may need to switch the working profile, or part of it, not for all the images but for some specific computation.
 We have defined some different methods that would allow you to achieve this feature by code. 
 
 ```smalltalk
 TKTConfiguration>> profileNamed: aProfileName during: aBlock      	
- 	" Uses a predefined profile, during the execution of the given block "
- profile: aProfile during: aBlock					
- 	" Uses a profile, during the execution of the given block "
- errorHandler: anErrorHandler during: aBlock		
- 	" Uses a given errorHandler, during the execution of the given block "
- poolWorkerProcess: anObject during: aBlock			
- 	" Uses a given Pool-Worker process, during the execution of the given block "
- process: anObject during: aBlock					
- 	" Uses a given process, during the execution of the given block "
- processProvider: aProcessProvider during: aBlock	
- 	" Uses a given Process provider, during the execution of the given block "
- serviceManager: aManager during: aBlock			
- 	" Uses a given Service manager, during the execution of the given block "
+ 	"Uses a predefined profile, during the execution of the given block "
+```
 
+```
+ profile: aProfile during: aBlock					
+ 	"Uses a profile, during the execution of the given block "
+```
+
+```
+ errorHandler: anErrorHandler during: aBlock		
+ 	"Uses a given errorHandler, during the execution of the given block "
+```
+ poolWorkerProcess: anObject during: aBlock			
+	"Uses a given Pool-Worker process, during the execution of the given block "
+```
+
+```
+process: anObject during: aBlock					
+	"Uses a given process, during the execution of the given block "
+```
+
+```
+processProvider: aProcessProvider during: aBlock	
+	" Uses a given Process provider, during the execution of the given block "
+```
+
+```
+serviceManager: aManager during: aBlock			
+	" Uses a given Service manager, during the execution of the given block "
 ```
 
 An example of usage
+
 ```smalltalk
- future := TKTConfiguration>>profileNamed: #test during: [ [2 + 2 ] future ]
+future := TKTConfiguration>>profileNamed: #test during: [ [2 + 2 ] future ]
 ```
 
 
