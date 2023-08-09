@@ -1,16 +1,16 @@
 ## TaskIt
 
 In the previous chapters, we presented low-level concepts of concurrent programming. 
-It is, however, not really good to sprinkle your code with process forking. This is why we present now TaskIt. TaskIt is a higher-level library to manage concurrent tasks but without resolving to low-level mechanisms. 
+It is, however, not really good to sprinkle your code with process forking. This is why we now present TaskIt. TaskIt is a higher-level library to manage concurrent tasks but without resolving to low-level mechanisms. 
 
-TaskIt is a library that eases process usage in Pharo. It provides abstractions to execute and synchronize concurrent tasks, and several pre-built mechanisms that are useful for many application developers. This chapter starts by familiarizing the reader with TaskIt's abstractions, guided by examples and code snippets. In the end, we discuss TaskIt extension points and possible customizations.
+TaskIt is a library that eases process usage in Pharo. It provides abstractions to execute and synchronize concurrent tasks and several pre-built mechanisms that are useful for many application developers. This chapter starts by familiarizing the reader with TaskIt's abstractions, guided by examples and code snippets. In the end, we discuss TaskIt extension points and possible customizations.
 
 ### Why TaskIt?
-Expressing and managing concurrent computations is a concern of importance to developing applications that scale. 
-A web application may want to use different processes for each of its incoming requests. Or it may want to use a "thread pool" in some cases. 
-In other cases, a desktop application may want to send computations to a worker to not block the UI thread.
+Expressing and managing concurrent computations is essential to developing applications that scale. 
+A web application may want to use different processes for each incoming request. Or it may want to use a "thread pool" in some cases. 
+In other cases, a desktop application may want to send computations to a worker not to block the UI thread.
 
-You can use the low-level libraries we presented so far. Now it means that as a developer you will have to take care of the following point: you should pay attention that the processes you created do not:
+You can use the low-level libraries we presented so far. Now it means that as a developer, you will have to take care of the following point: you should pay attention that the processes you created do not:
 - create race condition where one process is taking a resource already used by another one,
 - create processes with the wrong priority that can impact the performance and behavior of the complete system,
 - create a process that is starving and waiting endlessly that a semaphore gets signaled.
@@ -21,22 +21,22 @@ These are the basic problems that may arise when processes are used without real
 In addition, you should understand where to place critical sections if needed.
 
 This is why TaskIt is interesting. It abstracts low-level mechanisms.
-TaskIt's main abstractions are, as the name indicates, tasks. A task is a unit of execution. By splitting the execution of a program into several tasks, TaskIt can run those tasks concurrently, synchronize their access to data, or order even help in ordering and synchronizing their execution.
+TaskIt's main abstractions are, as the name indicates, tasks. A task is a unit of execution. By splitting the execution of a program into several tasks, TaskIt can run those tasks concurrently, synchronize their access to data or order, and even help in ordering and synchronizing their execution.
 
 
 
 %Processes in Pharo are implemented as green threads scheduled by the virtual machine, without %depending on the machinery of the underlying operating system. This has several consequences on the usage of concurrency we can do:
 
 %- Processes are cheap to create and schedule. We can create as many of them as we want, and %performance will only degrade if the code executed in those processes does so, which is to be %expected.
-%- Processes provide concurrent execution but no real parallelism. Inside Pharo, it does not matter %the number of processes we use. They will be always executed in a single operating system thread, %in a single operating system process.
+%- Processes provide concurrent execution but no real parallelism. Inside Pharo, it does not matter %the number of processes we use. They will always be executed in a single operating system thread, %in a single system process.
 
-%Also, besides how expensive it is to create a process, to know how we could organize the processes %in our application, we need to know how to synchronize such processes. For example, maybe we need %to execute two processes concurrently and we want a third one to wait for the completion of the %first two before starting. Or maybe we need to maximize the parallelism of our application while %enforcing the concurrent access to some piece of state. And all these issues require avoiding the %creation of deadlocks.
+%Also, besides how expensive it is to create a process, to know how we could organize the processes %in our application, we need to know how to synchronize such processes. For example, maybe we need %to execute two processes concurrently, and we want a third one to wait for the completion of the %first two before starting. Or maybe we need to maximize the parallelism of our application while %enforcing the concurrent access to some piece of state. And all these issues require avoiding the %creation of deadlocks.
 
 
 
 ### Loading
 
-If you want a specific release such as v1.0, you can load the associated tag as follows:
+If you want a specific release, such as v1.0, you can load the associated tag as follows:
 
 ```smalltalk
 Metacello new
@@ -91,7 +91,7 @@ The real acid test is to schedule a long-running task. The following example sch
 
 ### Schedule vs. fork
 You may be asking yourself what's the difference between the `schedule` and `fork`. From the examples above, they seem to do the same, but they do not. 
-In a nutshell, to understand why `schedule` means something different than `fork`, picture that using TaskIt two tasks may execute inside the same process, or in a pool of processes, while `fork` creates a new process every time.
+In a nutshell, to understand why `schedule` means something different than `fork`, picture that using TaskIt two tasks may execute inside the same process or in a pool of processes, while `fork` creates a new process every time.
 
 You will find a longer answer in the section below explaining *runners*. In TaskIt, tasks are not directly scheduled in Pharo's global `ProcessScheduler` object as usual `Process` objects are. Instead, a task is scheduled in a task runner. It is the responsibility of the task runner to execute the task.
 
@@ -143,7 +143,7 @@ We can schedule a task with a future by using the `future` message on a block cl
 aFuture := [ 2 + 2 ] future.
 ```
 
-One way to see futures is as placeholders. When the task is finished, it deploys its result into the corresponding future. A future then provides access to its value, but since we cannot know *when* this value will be available, we cannot access it right away. Instead, futures provide an asynchronous way to access its value by using *callbacks*. A callback is an object that will be executed when the task execution is finished.  
+One way to see futures is as placeholders. When the task is finished, it deploys its result into the corresponding future. A future then provides access to its value, but since we cannot know *when* this value will be available, we cannot access it immediately. Instead, futures provide an asynchronous way to access its value by using *callbacks*. A callback is an object that will be executed when the task execution is finished.  
 
 In general terms, we do not want to **force** a future to retrieve its value in a synchronous way.
 By doing so, we would be going back to the synchronous world, blocking a process' execution and not exploiting concurrency.
@@ -259,7 +259,7 @@ First, you'll see that a different process is being used to execute each task. A
 
 ### Local Process Task Runner
 
-The local process runner, an instance of `TKTLocalProcessTaskRunner`, is a task runner that executes a task in the caller process. In other words, this task runner does not run concurrently. Executing the following piece of code:
+The local process runner, an instance of `TKTLocalProcessTaskRunner,` is a task runner that executes a task in the caller process. In other words, this task runner does not run concurrently. Executing the following piece of code:
 
 ```smalltalk
 aRunner := TKTLocalProcessTaskRunner new.
@@ -289,7 +289,7 @@ worker schedule: [ 1 + 5 ].
 worker stop.
 ```
 
-Using workers, we can control the amount of live processes and how tasks are distributed amongst them. For example, in the following example, three tasks are executed sequentially in a single separate process while still allowing us to use an asynchronous style of programming.
+Using workers, we can control the amount of live processes and how tasks are distributed amongst them. For example, in the following example, three tasks are executed sequentially in a single separate process while still allowing us to use an asynchronous programming style.
 
 ```smalltalk
 worker := TKTWorker new start.
@@ -305,8 +305,8 @@ Workers can be combined into *worker pools*.
 
 ### The Worker pool
 
-A TaskIt worker pool is a pool of worker runners, equivalent to a ThreadPool from other programming languages. Its main purpose is to provide several worker runners and decouple us from the management of threads/processes. 
-A worker pool is a runner in the sense we use the `schedule:` message to schedule tasks in it. 
+A TaskIt worker pool is a pool of worker runners, equivalent to a ThreadPool from other programming languages. Its primary purpose is to provide several worker runners and decouple us from managing threads/processes. 
+A worker pool is a runner in the sense that we use the `schedule:` message to schedule tasks. 
 
 In TaskIt, we count two kinds of worker pools: 
 
@@ -327,7 +327,7 @@ Before using a pool, we need to specify the maximum number of workers using the 
 pool := TKTWorkerPool new.
 pool poolMaxSize: 5.
 ```
-TaskIt worker pools internally use an extra worker to synchronise the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
+TaskIt worker pools internally use an extra worker to synchronize the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
 
 ```smalltalk
 pool := TKTWorkerPool new.
@@ -344,7 +344,7 @@ pool stop.
 
 #### TKTCommonQueueWorkerPool
 
-Internally, all runners inside a TKTCommonQueueWorkerPool pool share a common queue. This pool counts with a watchdog that is in charge of ensuring that all the workers are alive, and in charge of reducing the number of workers when the load of work goes down. 
+Internally, all runners inside a TKTCommonQueueWorkerPool pool share a common queue. This pool counts with a watchdog that is in charge of ensuring that all the workers are alive and in charge of reducing the number of workers when the load of work goes down. 
 
 
 Different applications may have different concurrency needs; thus, TaskIt worker pools do not provide a default amount of workers. Before using a pool, we need to specify the maximum number of workers in the pool using the `poolMaxSize:` message. A worker pool will create new workers on demand.
@@ -353,7 +353,7 @@ Different applications may have different concurrency needs; thus, TaskIt worker
 pool := TKTCommonQueueWorkerPool new.
 pool poolMaxSize: 5.
 ```
-TaskIt worker pools internally use an extra worker to synchronise the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
+TaskIt worker pools internally use an extra worker to synchronize the access to its task queue. Because of this, a worker pool has to be manually started using the `start` message before scheduled messages start to be executed.
 
 ```smalltalk
 pool := TKTCommonQueueWorkerPool new.
@@ -390,13 +390,13 @@ aRunner exceptionHandler: TKTDebuggerExceptionHandler new.
 
 ### Task Timeout
 
-In TaskIt, tasks can be optionally scheduled with a timeout. A task's timeout limits the execution of a task to a window of time. If the task tries to run longer than the specified time, the task is cancelled automatically. This behaviour is desirable because a long-running task may be a hint towards a problem, or it can just affect the responsiveness of our application.
+In TaskIt, tasks can be optionally scheduled with a timeout. A task's timeout limits the execution of a task to a window of time. If the task tries to run longer than the specified time, the task is canceled automatically. This behavior is desirable because a long-running task may be a hint towards a problem, or it can just affect the responsiveness of our application.
 
-A task's timeout can be provided while scheduling a task in a runner using the `schedule:timeout:` message, follows: 
+A task's timeout can be provided while scheduling a task in a runner using the `schedule:timeout:` message, as follows: 
 ```smalltalk
 aRunner schedule: [1 second wait] timeout: 50 milliSeconds.
 ```
-If the task surpasses the timeout, the scheduled task will be cancelled with an exception.
+If the task surpasses the timeout, the scheduled task will be canceled with an exception.
 
 A task's timeout must not be confused with a future's synchronous access timeout (*explained below*). The task timeout governs the task execution, while a future's timeout governs only the access to the future value. If a future time out while accessing its value, the task will continue its execution normally.
 
@@ -513,9 +513,9 @@ This combinator is meant to enforce the order of execution of several actions, a
 ### Synchronous access
 
 Sometimes, although we do not recommend it, you will need or want to access the value of a task synchronously: that is, to wait for it. We do not recommend waiting for a task because of several reasons:
-  - sometimes, you do not know how much a task will last and therefore, the waiting can kill your application's responsiveness
+  - sometimes, you do not know how much a task will last, and therefore, the waiting can kill your application's responsiveness
   - also, it will block your current process until the waiting is finished
-  - you come back to the synchronous world, killing ultimately the purpose of using TaskIt :)
+  - you come back to the synchronous world, ultimately killing the purpose of using TaskIt :)
 
 However, since experienced users may still need this feature, TaskIt futures provide three different messages to access synchronously its result: `isFinished`, `waitForCompletion:` and `synchronizeTimeout:`.
 
@@ -622,64 +622,14 @@ Additionally, TaskIt provides an alternative means to create services through bl
 ```smalltalk
 service := TKTParameterizableService new.
 service name: 'Generic watcher service'.
-service onSetUpDo: [ Transcript show: 'File watcher started' ].
-service onTearDownDo: [ Transcript show: 'File watcher finished' ].
+service onSetUpDo: [ Transcript show: 'File watcher started' ; cr].
+service onTearDownDo: [ Transcript show: 'File watcher finished' ; cr].
 service step: [
   'temp.txt' asFileReference exists
-    ifFalse: [ Transcript show: 'file does not exist!' ] ].
+    ifFalse: [ Transcript show: 'file does not exist!'; cr  ] ].
 
 service start.
 ```
-
-### ActIt
-
-TaskIt we are also providing actors, leveraging the whole Taskit implementation, and adding some extra features. Our implementation is inspired by "Actalk: a Testbed for Classifying and Designing Actor Languages in the Smalltalk-80 Environment", but adapted to the new Pharo state-full traits.
-
-
-#### Actors
-
-The actor's model proposes to provide an interface to interact with a process. Allowing the user of a process to ask for service to a process, by message sending.
-
-To achieve the same kind of behaviour in Pharo, we subordinate a process to expose and serve the behaviour of an existing object. 
-
-#### How to use it
-
-To achieve this, we propose the trait `TKTActorBehaviour`, which is responsible for extending a class by adding the message actor. 
-
-This actor message will return an instance of the class `TKTActor`, which will act as a proxy (managed by `doesnotUnderstand:` message) to the object but transform the calls into tasks to be executed sequentially.
-
-Each method sent to the actor will return a *future*. 
-
-To make your domain object become an actor, add the usage of the trait `TKTActorBehaviour` as follows:
-
-```smalltalk
-Object << #MyDomainObject
-	uses: TKTActorBehaviour;
-	slots: {value};
-	package: 'MyDomainObjectPack'
-
-myObject := MyDomainObject new. 
-myObject setValue: 2.
-
-self assert: myObject getValue equals: 2.
-
-myActor := myObject actor.
-self assert: (myActor getValue isKindOf: TKTFuture).
-self assert: (myActor getValue synchronizeTimeout: 1 second) equals: myObject getValue. 
-
-```
-
-### How to act
-
-To add this trait is not enough to make your Object into an Actor. 
-You have to keep in mind that any time that you use `smalltalk self` in your object, you are doing a synchronous call. 
-That each time that you give your object's reference by parameter instead of the actor's reference, your object will work as a classic object as well.
-  
-For allowing the user to do async calls to self, the trait provides de property `smalltalk aself` (Async-self). 
-  
-Remind also that even when actors provide a nice way to avoid simple semaphores, they do not entirely avoid deadlocks since the interaction between actors is possible, desirable, and 
-non-regulated.
-  
 
 
 ### Process dashboard 
@@ -831,7 +781,7 @@ In this combo box you will find all the predefined profiles.
 ```smalltalk
 TKTConfiguration profileNamed: #development 
 ```
-The method `profileNamed: aProfile` receives as a parameter name of a predefined profile. This way is handy for automating behaviour. 
+The method `profileNamed: aProfile` receives as a parameter name of a predefined profile. This way is handy for automating behavior. 
 
 **The third** one finally is to manually build your own profile and set it up, again by code 	
 
@@ -902,6 +852,56 @@ An example of usage
 ```smalltalk
 future := TKTConfiguration>>profileNamed: #test during: [ [2 + 2 ] future ]
 ```
+
+### ActIt
+
+TaskIt we are also providing actors, leveraging the whole Taskit implementation, and adding some extra features. Our implementation is inspired by "Actalk: a Testbed for Classifying and Designing Actor Languages in the Smalltalk-80 Environment", but adapted to the new Pharo state-full traits.
+
+
+#### Actors
+
+The actor's model proposes to provide an interface to interact with a process. Allowing the user of a process to ask for service to a process, by message sending.
+
+To achieve the same kind of behavior in Pharo, we subordinate a process to expose and serve the behavior of an existing object. 
+
+#### How to use it
+
+To achieve this, we propose the trait `TKTActorbehavior`, which is responsible for extending a class by adding the message actor. 
+
+This actor message will return an instance of the class `TKTActor`, which will act as a proxy (managed by `doesnotUnderstand:` message) to the object but transform the calls into tasks to be executed sequentially.
+
+Each method sent to the actor will return a *future*. 
+
+To make your domain object become an actor, add the usage of the trait `TKTActorbehavior` as follows:
+
+```smalltalk
+Object << #MyDomainObject
+	uses: TKTActorbehavior;
+	slots: {value};
+	package: 'MyDomainObjectPack'
+
+myObject := MyDomainObject new. 
+myObject setValue: 2.
+
+self assert: myObject getValue equals: 2.
+
+myActor := myObject actor.
+self assert: (myActor getValue isKindOf: TKTFuture).
+self assert: (myActor getValue synchronizeTimeout: 1 second) equals: myObject getValue. 
+
+```
+
+### How to act
+
+To add this trait is not enough to make your Object into an Actor. 
+You have to keep in mind that any time that you use `smalltalk self` in your object, you are doing a synchronous call. 
+That each time that you give your object's reference by parameter instead of the actor's reference, your object will work as a classic object as well.
+  
+For allowing the user to do async calls to self, the trait provides de property `smalltalk aself` (Async-self). 
+  
+Remind also that even when actors provide a nice way to avoid simple semaphores, they do not entirely avoid deadlocks since the interaction between actors is possible, desirable, and 
+non-regulated.
+  
 
 
 
