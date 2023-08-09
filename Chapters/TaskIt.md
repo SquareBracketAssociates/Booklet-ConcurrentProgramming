@@ -81,16 +81,16 @@ We are scheduling a task that is useless, and we cannot even observe its result 
 
 The following code snippet will schedule a task that prints to the `Transcript`. Just evaluating the expression below will make it evident that the task is actually executed. However, a so simple task runs so fast that it's difficult to tell if it's actually running concurrently with our primary process or not.
 ```smalltalk
-[ 'Happened' logCr ] schedule.
+[ 'Happened' traceCr ] schedule.
 ```
 The real acid test is to schedule a long-running task. The following example schedules a task that waits for a second before writing to the transcript. While normal synchronous code would block the main thread, you'll notice that this one does not. 
 ```smalltalk
 [ 1 second wait.
-'Waited' logCr ] schedule.
+'Waited' traceCr ] schedule.
 ```
 
 ### Schedule vs. fork
-You may be asking yourself what's the difference between the `schedule` and `fork`. From the examples above they seem to do the same but they do not. 
+You may be asking yourself what's the difference between the `schedule` and `fork`. From the examples above, they seem to do the same, but they do not. 
 In a nutshell, to understand why `schedule` means something different than `fork`, picture that using TaskIt two tasks may execute inside the same process, or in a pool of processes, while `fork` creates a new process every time.
 
 You will find a longer answer in the section below explaining *runners*. In TaskIt, tasks are not directly scheduled in Pharo's global `ProcessScheduler` object as usual `Process` objects are. Instead, a task is scheduled in a task runner. It is the responsibility of the task runner to execute the task.
@@ -106,7 +106,7 @@ A task in TaskIt's domain is **valuable objects** i.e., objects that will do som
 The message `schedule` is just syntax sugar for:
 
 ```smalltalk
-(TKTTask valuable: [ 1 logCr ]) schedule.
+(TKTTask valuable: [ 1 traceCr ]) schedule.
 ```
 
 We can then create tasks using message sends or weak message sends:
@@ -116,7 +116,7 @@ TKTTask valuable: (WeakMessageSend receiver: Object new selector: #yourself).
 TKTTask valuable: (MessageSend receiver: 1 selector: #+ arguments: { 7 }).
 ```
 
-Or even create our own task object:
+Or even create our task object:
 
 ```smalltalk
 Object << #MyTask
@@ -159,13 +159,13 @@ In the example below, we create a future and subscribe to it as a success callba
 
 ```smalltalk
 aFuture := [ 2 + 2 ] future.
-aFuture onSuccessDo: [ :result | result logCr ].
+aFuture onSuccessDo: [ :result | result traceCr ].
 ```
 We can also define callbacks that handle a task's failure using the `onFailureDo:` message. If an exception occurs and the task cannot finish its execution as expected, the corresponding exception will be passed as an argument to the failure callback, as in the following example.
 
 ```smalltalk
 aFuture := [ Error signal ] future.
-aFuture onFailureDo: [ :error | error sender method selector logCr ].
+aFuture onFailureDo: [ :error | error signalerContext sender method selector traceCr ].
 ```
 
 Futures accept more than one callback. When its associated task is finished, all its callbacks will be *scheduled* for execution. In other words, the only guarantee that callbacks give us is that they will all be eventually executed. However, the future itself cannot guarantee either **when** the callbacks will be executed or **in which order**. 
@@ -174,10 +174,10 @@ The following example shows how we can define several successful callbacks for t
 
 ```smalltalk
 future := [ 2 + 2 ] future.
-future onSuccessDo: [ :v | FileStream stdout nextPutAll: v asString; cr ].
-future onSuccessDo: [ :v | 'Finished' logCr ].
-future onSuccessDo: [ :v | [ v factorial logCr ] schedule ].
-future onFailureDo: [ :error | error logCr ].
+future onSuccessDo: [ :v | Stdio stdout nextPutAll: v asString; cr; flush. ].
+future onSuccessDo: [ :v | 'Finished' traceCr ].
+future onSuccessDo: [ :v | [ v factorial traceCr ] schedule ].
+future onFailureDo: [ :error | error traceCr ].
 ```
 
 Callbacks work whether the task is still running or already finished. If the task is running, callbacks are registered and wait for the completion of the task. 
@@ -186,10 +186,10 @@ See below code examples that illustrate this: we first create a future and subsc
 
 ```smalltalk
 future := [ 1 second wait. 2 + 2 ] future.
-future onSuccessDo: [ :v | v logCr ].
+future onSuccessDo: [ :v | v traceCr ].
 
 2 seconds wait.
-future onSuccessDo: [ :v | v logCr ].
+future onSuccessDo: [ :v | v traceCr ].
 ```
 
 ### Task runners: Controlling how tasks are executed 
@@ -199,12 +199,14 @@ So far, we created and executed tasks without caring too much about the form the
 A task runner is an object in charge of executing tasks *eventually*. Indeed, the main API of a task runner is the `schedule:` message that allows us to tell the task runner to schedule a task.
 
 ```smalltalk
+aRunner := TKTNewProcessTaskRunner new.
 aRunner schedule: [ 1 + 1 ]
 ```
 
 A nice extension built on top of the schedule is the  `future:` message that allows us to schedule a task but obtain a future of its eventual execution.
 
 ```smalltalk
+aRunner := TKTNewProcessTaskRunner new.
 future := aRunner future: [ 1 + 1 ]
 ```
 
@@ -216,14 +218,14 @@ A new process task runner, an instance of `TKTNewProcessTaskRunner`, is a task r
 
 ```smalltalk
 aRunner := TKTNewProcessTaskRunner new.
-aRunner schedule: [ 1 second wait. 'test' logCr ].
+aRunner schedule: [ 1 second wait. 'test' traceCr ].
 ```
 Moreover, since new processes are created to manage each task, scheduling two different tasks will be executed concurrently. For example, in the code snippet below, we schedule twice a task that prints the identity hash of the current process.
 
 ```smalltalk
 aRunner := TKTNewProcessTaskRunner new.
 task := [ 10 timesRepeat: [ 10 milliSeconds wait.
-				('Hello from: ', Processor activeProcess identityHash asString) logCr ] ].
+				('Hello from: ', Processor activeProcess identityHash asString) traceCr ] ].
 aRunner schedule: task.
 aRunner schedule: task.
 ```
@@ -294,6 +296,8 @@ worker := TKTWorker new start.
 future1 := worker future: [ 2 + 2 ].
 future2 := worker future: [ 3 + 3 ].
 future3 := worker future: [ 1 + 1 ].
+1 second wait.
+worker stop.
 ```
 
 Workers can be combined into *worker pools*.
@@ -329,7 +333,7 @@ TaskIt worker pools internally use an extra worker to synchronise the access to 
 pool := TKTWorkerPool new.
 pool poolMaxSize: 5.
 pool start.
-pool schedule: [ 1 logCr ].
+pool schedule: [ 1 traceCr ].
 ```
 
 Once we are done with the worker pool, we can stop it by sending it the `stop` message.
@@ -355,7 +359,7 @@ TaskIt worker pools internally use an extra worker to synchronise the access to 
 pool := TKTCommonQueueWorkerPool new.
 pool poolMaxSize: 5.
 pool start.
-pool schedule: [ 1 logCr ].
+pool schedule: [ 1 traceCr ].
 ```
 
 Once we are done with the worker pool, we can stop it by sending it the `stop` message.
@@ -416,7 +420,7 @@ The `collect:` combinator does, as its name says, the same as the collection's A
 ```smalltalk
 future := [ 2 + 3 ] future.
 (future collect: [ :number | number factorial ])
-    onSuccessDo: [ :result | result logCr ].
+    onSuccessDo: [ :result | result traceCr ].
 ```
 
 The `collect:` combinator returns a new future whose value will result from transforming the first future's value.
@@ -428,8 +432,8 @@ The `select:` combinator does, as its name says, the same as the collection's AP
 ```smalltalk
 future := [ 2 + 3 ] future.
 (future select: [ :number | number even ])
-    onSuccessDo: [ :result | result logCr ];
-    onFailureDo: [ :error | error logCr ].
+    onSuccessDo: [ :result | result traceCr ];
+    onFailureDo: [ :error | error traceCr ].
 ```
 
 The `select:` combinator returns a new future whose result is the result of the first future if it satisfies the condition. Otherwise, its value will be a `NotFound` exception.
@@ -441,7 +445,7 @@ The `flatCollect:` combinator is similar to the `collect:` combinator, transform
 ```smalltalk
 future := [ 2 + 3 ] future.
 (future flatCollect: [ :number | [ number factorial ] future ])
-    onSuccessDo: [ :result | result logCr ].
+    onSuccessDo: [ :result | result traceCr ].
 ```
 The `flatCollect:` combinator returns a new future whose value will be the result of the future yielded by the transformation.
 
@@ -453,7 +457,7 @@ The `zip:` combinator combines two futures into a single future that returns an 
 future1 := [ 2 + 3 ] future.
 future2 := [ 18 factorial ] future.
 (future1 zip: future2)
-    onSuccessDo: [ :result | result logCr ].
+    onSuccessDo: [ :result | result traceCr ].
 ```
 `zip:` works only on success: the resulting future will fail if any of the future is also a failure.
 
@@ -464,7 +468,7 @@ The `on:do:` allows us to transform a future that fails with an exception into a
 ```smalltalk
 future := [ Error signal ] future
     on: Error do: [ :error | 5 ].
-future onSuccessDo: [ :result | result logCr ].
+future onSuccessDo: [ :result | result traceCr ].
 ```
 
 - **The `fallbackTo:` combinator**
@@ -475,7 +479,7 @@ The `fallbackTo:` combinator combines two futures in a way such that if the firs
 failFuture := [ Error signal ] future.
 successFuture := [ 1 + 1 ] future.
 (failFuture fallbackTo: successFuture)
-    onSuccessDo: [ :result | result logCr ].
+    onSuccessDo: [ :result | result traceCr ].
 ```
 
 In other words, `fallbackTo:` produces a new future whose value is the first's future value if success, or it is the second future's value otherwise. 
@@ -488,8 +492,8 @@ The `firstCompleteOf:` combinator combines two futures resulting in a new future
 failFuture := [ 1 second wait. Error signal ] future.
 successFuture := [ 1 second wait. 1 + 1 ] future.
 (failFuture firstCompleteOf: successFuture)
-    onSuccessDo: [ :result | result logCr ];
-    onFailureDo: [ :error | error logCr ].
+    onSuccessDo: [ :result | result traceCr ];
+    onFailureDo: [ :error | error traceCr ].
 ```
 
 In other words, `fallbackTo:` produces a new future whose value is the first's future value if success, or it is the second future's value otherwise.
@@ -500,8 +504,8 @@ The `andThen:` combinator allows one to chain several futures to a single future
 
 ```smalltalk
 ([ 1 + 1 ] future
-    andThen: [ :result | result logCr ])
-    andThen: [ :result | FileStream stdout nextPutAll: result ]. 
+    andThen: [ :result | result traceCr ])
+    andThen: [ :result | Stdio stdout nextPutAll: result ]. 
 ```
 
 This combinator is meant to enforce the order of execution of several actions, and this it is mostly for side-effect purposes where we want to guarantee such order.
@@ -519,30 +523,30 @@ However, since experienced users may still need this feature, TaskIt futures pro
 
 ```smalltalk
 future := [1 second wait] future.
-[future isFinished] whileFalse: [50 milliseconds wait].
+[future isFinished] whileFalse: [50 milliSeconds wait].
 ```
 
 An alternative version for this code that does not require an active wait is the message `waitForCompletion:`. `waitForCompletion:` expects a duration as an argument that he will use as a timeout. This method will block the execution until the task finishes or the timeout expires, whatever comes first. If the task does not finish by the timeout, a `TKTTimeoutException` will be raised.
 
 ```smalltalk
 future := [1 second wait] future.
-future waitForTimeout: 2 seconds.
+future waitForCompletion: 2 seconds.
 
 future := [1 second wait] future.
-[future waitForTimeout: 50 milliSeconds] on: TKTTimeoutException do: [ :error | error logCr ].
+[future waitForCompletion: 50 milliSeconds] on: TKTTimeoutException do: [ :error | error traceCr ].
 ```
 
 Finally, to retrieve the future's result, futures understand the `synchronizeTimeout:` message, which receives a duration as an argument as its timeout. The result is returned if a successful value is available by the timeout. Suppose the timeout finishes the task with a failure; an `UnhandledError` exception is raised, wrapping the original exception. Otherwise, if the task is not finished by the timeout, a `TKTTimeoutException` is raised.
 
 ```smalltalk
 future := [1 second wait. 42] future.
-(future synchronizeTimeout: 2 seconds) logCr.
+(future synchronizeTimeout: 2 seconds) traceCr.
 
 future := [ self error ] future.
-[ future synchronizeTimeout: 2 seconds ] on: Error do: [ :error | error logCr ].
+[ future synchronizeTimeout: 2 seconds ] on: Error do: [ :error | error traceCr ].
 
 future := [ 5 seconds wait ] future.
-[ future synchronizeTimeout: 1 seconds ] on: TKTTimeoutException do: [ :error | error logCr ].
+[ future synchronizeTimeout: 1 seconds ] on: TKTTimeoutException do: [ :error | error traceCr ].
 ```
 
 ## Services
